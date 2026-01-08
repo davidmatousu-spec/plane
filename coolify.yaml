@@ -12,6 +12,7 @@ services:
         NEXT_PUBLIC_WEB_URL: ${WEB_URL}
         NEXT_PUBLIC_GOOGLE_CLIENTID: ${GOOGLE_CLIENTID}
     restart: always
+    command: ./bin/docker-entrypoint-web.sh
     expose:
       - "3000"
     depends_on:
