@@ -112,7 +112,7 @@ services:
     restart: always
     command: postgres -c 'max_connections=1000'
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - 'pgdata_new:/var/lib/postgresql/data'
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-plane}
       POSTGRES_DB: ${POSTGRES_DB:-plane}
@@ -149,7 +149,7 @@ services:
       MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY}
 
 volumes:
-  pgdata:
+  pgdata_new: null
   redisdata:
   uploads:
   rabbitmq_data:
