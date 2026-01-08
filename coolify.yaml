@@ -124,7 +124,7 @@ services:
     image: valkey/valkey:7.2.11-alpine
     restart: always
     volumes:
-      - redisdata:/data
+      - 'redisdata_new:/data'
 
   plane-mq:
     container_name: plane-mq
@@ -150,6 +150,6 @@ services:
 
 volumes:
   pgdata_new: null
-  redisdata:
+  redisdata_new: null
   uploads:
   rabbitmq_data:
