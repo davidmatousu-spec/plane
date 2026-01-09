@@ -58,6 +58,7 @@ type Props = {
 export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: Props) {
   const { t } = useTranslation();
   const { workspaceSlug, projectId, issueId, issueOperations, isEditable } = props;
+  
   // store hooks
   const { getProjectById } = useProject();
   const { areEstimateEnabledByProjectId } = useProjectEstimates();
@@ -66,33 +67,36 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
   } = useIssueDetail();
   const { getUserDetails } = useMember();
   const { getStateById } = useProjectState();
-  const issue = getIssueById(issueId);
-  if (!issue) return <></>;
-
-  const createdByDetails = getUserDetails(issue.created_by);
-
-  // derived values
-  const projectDetails = getProjectById(issue.project_id);
-  const stateDetails = getStateById(issue.state_id);
   
-  // --- BUDGET LOGIC ---
-  const { currentUser } = useUser();
-  const [budgetVal, setBudgetVal] = useState(issue.budget);
+  // 1. Získání issue (může být undefined)
+  const issue = getIssueById(issueId);
 
-  // Synchronizace s databází
+  // --- 2. NAŠE OPRAVENÁ LOGIKA (MUSÍ BÝT TADY NAHOŘE!) ---
+  const { currentUser } = useUser();
+  
+  // Inicializujeme state bezpečně (pokud issue neexistuje, je to undefined)
+  const [budgetVal, setBudgetVal] = useState<number | null | undefined>(issue?.budget);
+
+  // UseEffect pro synchronizaci (hlídá, jestli se issue načetlo)
   useEffect(() => {
-    if (issue) setBudgetVal(issue.budget);
-  }, [issue.budget]);
+    if (issue) {
+        setBudgetVal(issue.budget);
+    }
+  }, [issue?.budget]); // Otazník je zde důležitý
 
   const showBudget = currentUser?.email && ALLOWED_BUDGET_USERS.includes(currentUser.email);
 
   const handleBudgetSave = async () => {
+    // Musíme zkontrolovat issue i tady
     if (issue && budgetVal != issue.budget) {
        const numVal = budgetVal === "" ? null : Number(budgetVal);
        await issueOperations.update(workspaceSlug, projectId, issueId, { budget: numVal });
     }
   };
-  // --------------------
+  // -------------------------------------------------------
+
+  // 3. Teprve TEĎ můžeme ukončit funkci, pokud issue není
+  if (!issue) return <></>;
 
   const minDate = issue.start_date ? getDate(issue.start_date) : null;
   minDate?.setDate(minDate.getDate());
