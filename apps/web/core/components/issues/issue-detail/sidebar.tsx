@@ -42,9 +42,8 @@ import { IssueLabel } from "./label";
 import { IssueModuleSelect } from "./module-select";
 import type { TIssueOperations } from "./root";
 import { useState, useEffect } from "react";
-import { useUser } from "@/hooks/store/user";
 
-// Emaily vyvolených:
+// Emaily vyvolených (zatím nepoužito v logice, ale nechte to tu pro strýčka příhodu):
 const ALLOWED_BUDGET_USERS = ["david.matousu@gmail.com", "vas.kolega@firma.cz"];
 
 type Props = {
@@ -62,41 +61,50 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
   // store hooks
   const { getProjectById } = useProject();
   const { areEstimateEnabledByProjectId } = useProjectEstimates();
+  
+  // 1. Hooky
   const {
     issue: { getIssueById },
   } = useIssueDetail();
+  
   const { getUserDetails } = useMember();
   const { getStateById } = useProjectState();
   
-  // 1. Získání issue (může být undefined)
+  // 2. Definice issue
   const issue = getIssueById(issueId);
 
-  // --- 2. NAŠE OPRAVENÁ LOGIKA (MUSÍ BÝT TADY NAHOŘE!) ---
-  const { currentUser } = useUser();
-  
-  // Inicializujeme state bezpečně (pokud issue neexistuje, je to undefined)
-  const [budgetVal, setBudgetVal] = useState<number | null | undefined>(issue?.budget);
+  // 3. Bezpečný State pro Budget
+  // Inicializujeme s undefined, aby se nestalo nic, dokud issue není načteno
+  const [budgetVal, setBudgetVal] = useState<number | null | undefined>(undefined);
 
-  // UseEffect pro synchronizaci (hlídá, jestli se issue načetlo)
   useEffect(() => {
-    if (issue) {
+    if (issue && issue.budget !== undefined) {
         setBudgetVal(issue.budget);
     }
-  }, [issue?.budget]); // Otazník je zde důležitý
+  }, [issue?.budget]);
 
-  const showBudget = currentUser?.email && ALLOWED_BUDGET_USERS.includes(currentUser.email);
+  // 4. Show Logic - Povolíme všem (abychom se vyhnuli importu useUser a pádu aplikace)
+  const showBudget = true; 
 
   const handleBudgetSave = async () => {
-    // Musíme zkontrolovat issue i tady
-    if (issue && budgetVal != issue.budget) {
+    // Checkujeme issue i issueOperations
+    if (issue && budgetVal != issue.budget && issueOperations) {
        const numVal = budgetVal === "" ? null : Number(budgetVal);
-       await issueOperations.update(workspaceSlug, projectId, issueId, { budget: numVal });
+       try {
+           await issueOperations.update(workspaceSlug, projectId, issueId, { budget: numVal });
+       } catch (err) {
+           console.error("Budget save failed", err);
+       }
     }
   };
   // -------------------------------------------------------
 
-  // 3. Teprve TEĎ můžeme ukončit funkci, pokud issue není
+  // 5. Teprve TEĎ můžeme ukončit funkci, pokud issue není
   if (!issue) return <></>;
+
+  const createdByDetails = getUserDetails(issue.created_by);
+  const projectDetails = getProjectById(issue.project_id);
+  const stateDetails = getStateById(issue.state_id);
 
   const minDate = issue.start_date ? getDate(issue.start_date) : null;
   minDate?.setDate(minDate.getDate());

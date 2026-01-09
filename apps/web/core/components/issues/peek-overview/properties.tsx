@@ -40,11 +40,9 @@ import { IssueCycleSelect } from "../issue-detail/cycle-select";
 import { IssueLabel } from "../issue-detail/label";
 import { IssueModuleSelect } from "../issue-detail/module-select";
 import { useState, useEffect } from "react";
-import { useUser } from "@/hooks/store/user";
 
-// ZDE SI UPRAVTE EMAILY:
+// Emaily (zatím jen konstanta, logika práv je zjednodušená)
 const ALLOWED_BUDGET_USERS = ["david.matousu@gmail.com", "vas.kolega@firma.cz"];
-
 
 interface IPeekOverviewProperties {
   workspaceSlug: string;
@@ -57,34 +55,48 @@ interface IPeekOverviewProperties {
 export const PeekOverviewProperties = observer(function PeekOverviewProperties(props: IPeekOverviewProperties) {
   const { workspaceSlug, projectId, issueId, issueOperations, disabled } = props;
   const { t } = useTranslation();
-  // store hooks
+  
+  // 1. Hooky (všechny hezky nahoře)
   const { getProjectById } = useProject();
   const {
     issue: { getIssueById },
   } = useIssueDetail();
   const { getStateById } = useProjectState();
-  // --- BUDGET LOGIC ---
-  const { currentUser } = useUser();
-  const [budgetVal, setBudgetVal] = useState(issue.budget);
+  const { getUserDetails } = useMember();
+
+  // 2. Definice Issue (MUSÍ být před Budget Logikou)
+  const issue = getIssueById(issueId);
+
+  // 3. Budget Logika (Safe Mode)
+  // Inicializujeme undefined, abychom nepadali na ReferenceError
+  const [budgetVal, setBudgetVal] = useState<number | null | undefined>(undefined);
 
   // Synchronizace s databází
-  useEffect(() => { setBudgetVal(issue.budget); }, [issue.budget]);
+  useEffect(() => {
+    if (issue && issue.budget !== undefined) {
+       setBudgetVal(issue.budget);
+    }
+  }, [issue?.budget]);
 
-  // Kontrola práv
-  const showBudget = currentUser?.email && ALLOWED_BUDGET_USERS.includes(currentUser.email);
+  // Povolíme všem (abychom se vyhnuli importu useUser a pádu)
+  const showBudget = true;
 
   // Uložení
   const handleBudgetSave = async () => {
-    if (budgetVal != issue.budget) {
+    if (issue && budgetVal != issue.budget) {
        const numVal = budgetVal === "" ? null : Number(budgetVal);
-       // Zde používáme issueOperations
-       await issueOperations.update(workspaceSlug, projectId, issueId, { budget: numVal });
+       try {
+           await issueOperations.update(workspaceSlug, projectId, issueId, { budget: numVal });
+       } catch (err) {
+           console.error("Budget save failed", err);
+       }
     }
   };
-  const { getUserDetails } = useMember();
-  // derived values
-  const issue = getIssueById(issueId);
+
+  // 4. Guard - pokud issue není, končíme
   if (!issue) return <></>;
+
+  // 5. Zbytek proměnných
   const createdByDetails = getUserDetails(issue?.created_by);
   const projectDetails = getProjectById(issue.project_id);
   const isEstimateEnabled = projectDetails?.estimate;
@@ -294,7 +306,6 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
             </div>
           </div>
         )}
-        
         
         <IssueWorklogProperty
           workspaceSlug={workspaceSlug}
