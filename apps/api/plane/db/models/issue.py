@@ -28,7 +28,7 @@ def get_default_properties():
         "start_date": True,
         "due_date": True,
         "labels": True,
-        "budget": True
+        "budget": True,
         "key": True,
         "priority": True,
         "state": True,
@@ -49,7 +49,7 @@ def get_default_filters():
         "assignees": None,
         "created_by": None,
         "labels": None,
-        "budget": True
+        "budget": True,
         "start_date": None,
         "target_date": None,
         "subscriber": None,
@@ -77,7 +77,7 @@ def get_default_display_properties():
         "estimate": True,
         "key": True,
         "labels": True,
-        "budget": True
+        "budget": True,
         "link": True,
         "priority": True,
         "start_date": True,

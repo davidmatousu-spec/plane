@@ -384,6 +384,20 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
         </WithDisplayPropertiesHOC>
       )}
 
+      {/* --- BUDGET (VLASTNÍ POLE) --- */}
+      <div
+        className="flex h-5 items-center gap-2 rounded-sm border-[0.5px] border-strong px-2.5 py-1 text-custom-text-200 bg-layer-1"
+        onFocus={handleEventPropagation}
+        onClick={handleEventPropagation}
+      >
+        <span className="flex h-3 w-3 items-center justify-center text-xs">💰</span>
+        <span className="text-caption-sm-regular text-custom-text-100">
+          {issue.budget ? `${issue.budget} Kč` : "–"}
+        </span>
+      </div>
+
+      
+
       {/* extra render properties */}
       {/* sub-issues */}
       {!isEpic && (
