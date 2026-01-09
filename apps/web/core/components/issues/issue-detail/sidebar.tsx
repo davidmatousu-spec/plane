@@ -42,7 +42,7 @@ import { IssueLabel } from "./label";
 import { IssueModuleSelect } from "./module-select";
 import type { TIssueOperations } from "./root";
 import { useState, useEffect } from "react";
-import { useUser } from "@/hooks/store/use-user";
+import { useUser } from "@/hooks/store/user";
 
 // Emaily vyvolených:
 const ALLOWED_BUDGET_USERS = ["david.matousu@gmail.com", "vas.kolega@firma.cz"];
@@ -293,7 +293,7 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
                 </div>
                 
                 {/* Pravá část: Input */}
-                <div className="flex-grow ml-2"> 
+                <div className="flex-grow ml-2">
                    <input
                     type="number"
                     className="w-full bg-transparent text-left text-body-xs-regular text-custom-text-100 placeholder:text-custom-text-400 focus:outline-none focus:bg-custom-background-90 rounded px-1.5 py-0.5 transition-all"

@@ -40,7 +40,7 @@ import { IssueCycleSelect } from "../issue-detail/cycle-select";
 import { IssueLabel } from "../issue-detail/label";
 import { IssueModuleSelect } from "../issue-detail/module-select";
 import { useState, useEffect } from "react";
-import { useUser } from "@/hooks/store/use-user";
+import { useUser } from "@/hooks/store/user";
 
 // ZDE SI UPRAVTE EMAILY:
 const ALLOWED_BUDGET_USERS = ["david.matousu@gmail.com", "vas.kolega@firma.cz"];
