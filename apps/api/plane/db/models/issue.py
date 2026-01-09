@@ -149,6 +149,7 @@ class Issue(ProjectBaseModel):
     )
     sequence_id = models.IntegerField(default=1, verbose_name="Issue Sequence ID")
     labels = models.ManyToManyField("db.Label", blank=True, related_name="labels", through="IssueLabel")
+    budget = models.IntegerField(null=True, blank=True, verbose_name="Budget Amount")
     sort_order = models.FloatField(default=65535)
     completed_at = models.DateTimeField(null=True)
     archived_at = models.DateField(null=True)
