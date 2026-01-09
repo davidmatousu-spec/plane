@@ -41,6 +41,11 @@ import { IssueCycleSelect } from "./cycle-select";
 import { IssueLabel } from "./label";
 import { IssueModuleSelect } from "./module-select";
 import type { TIssueOperations } from "./root";
+import { useState, useEffect } from "react";
+import { useUser } from "@/hooks/store/use-user";
+
+// Emaily vyvolených:
+const ALLOWED_BUDGET_USERS = ["david.matousu@gmail.com", "vas.kolega@firma.cz"];
 
 type Props = {
   workspaceSlug: string;
@@ -69,6 +74,25 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
   // derived values
   const projectDetails = getProjectById(issue.project_id);
   const stateDetails = getStateById(issue.state_id);
+  
+  // --- BUDGET LOGIC ---
+  const { currentUser } = useUser();
+  const [budgetVal, setBudgetVal] = useState(issue.budget);
+
+  // Synchronizace s databází
+  useEffect(() => {
+    if (issue) setBudgetVal(issue.budget);
+  }, [issue.budget]);
+
+  const showBudget = currentUser?.email && ALLOWED_BUDGET_USERS.includes(currentUser.email);
+
+  const handleBudgetSave = async () => {
+    if (issue && budgetVal != issue.budget) {
+       const numVal = budgetVal === "" ? null : Number(budgetVal);
+       await issueOperations.update(workspaceSlug, projectId, issueId, { budget: numVal });
+    }
+  };
+  // --------------------
 
   const minDate = issue.start_date ? getDate(issue.start_date) : null;
   minDate?.setDate(minDate.getDate());
@@ -252,6 +276,34 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
                 disabled={!isEditable}
               />
             </SidebarPropertyListItem>
+
+            {/* --- BUDGET INPUT (SIDEBAR) --- */}
+            {showBudget && (
+              <div className="group flex items-center justify-between gap-2 px-2 py-1 hover:bg-custom-background-80 rounded-md transition-colors min-h-[2rem]">
+                {/* Levá část: Ikonka a Popisek */}
+                <div className="flex items-center gap-3 text-custom-text-200 shrink-0 w-28">
+                   {/* Ikonka */}
+                   <div className="flex items-center justify-center w-3.5 h-3.5 text-xs opacity-70">💰</div>
+                   {/* Text */}
+                   <span className="text-body-xs-regular text-custom-text-200">Rozpočet</span>
+                </div>
+                
+                {/* Pravá část: Input */}
+                <div className="flex-grow ml-2">
+                   <input
+                    type="number"
+                    className="w-full bg-transparent text-left text-body-xs-regular text-custom-text-100 placeholder:text-custom-text-400 focus:outline-none focus:bg-custom-background-90 rounded px-1.5 py-0.5 transition-all"
+                    placeholder="-"
+                    value={budgetVal ?? ""}
+                    onChange={(e) => setBudgetVal(e.target.value)}
+                    onBlur={handleBudgetSave}
+                    onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                    disabled={!isEditable}
+                  />
+                </div>
+              </div>
+            )}
+            {/* ----------------------------- */}
 
             <IssueWorklogProperty
               workspaceSlug={workspaceSlug}

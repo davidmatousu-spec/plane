@@ -39,6 +39,12 @@ import type { TIssueOperations } from "../issue-detail";
 import { IssueCycleSelect } from "../issue-detail/cycle-select";
 import { IssueLabel } from "../issue-detail/label";
 import { IssueModuleSelect } from "../issue-detail/module-select";
+import { useState, useEffect } from "react";
+import { useUser } from "@/hooks/store/use-user";
+
+// ZDE SI UPRAVTE EMAILY:
+const ALLOWED_BUDGET_USERS = ["david.matousu@gmail.com", "vas.kolega@firma.cz"];
+
 
 interface IPeekOverviewProperties {
   workspaceSlug: string;
@@ -57,6 +63,24 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
     issue: { getIssueById },
   } = useIssueDetail();
   const { getStateById } = useProjectState();
+  // --- BUDGET LOGIC ---
+  const { currentUser } = useUser();
+  const [budgetVal, setBudgetVal] = useState(issue.budget);
+
+  // Synchronizace s databází
+  useEffect(() => { setBudgetVal(issue.budget); }, [issue.budget]);
+
+  // Kontrola práv
+  const showBudget = currentUser?.email && ALLOWED_BUDGET_USERS.includes(currentUser.email);
+
+  // Uložení
+  const handleBudgetSave = async () => {
+    if (budgetVal != issue.budget) {
+       const numVal = budgetVal === "" ? null : Number(budgetVal);
+       // Zde používáme issueOperations
+       await issueOperations.update(workspaceSlug, projectId, issueId, { budget: numVal });
+    }
+  };
   const { getUserDetails } = useMember();
   // derived values
   const issue = getIssueById(issueId);
@@ -203,23 +227,6 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
           </SidebarPropertyListItem>
         )}
 
-        {/* --- BUDGET (PEEK OVERVIEW) --- */}
-        {/* Snažíme se napodobit styl SidebarPropertyListItem, ale bez nutnosti importovat ikonu */}
-        <div className="flex items-center gap-3 px-2 h-8 hover:bg-custom-background-80 rounded-sm transition-colors">
-          {/* Levá část: Ikonka + Název */}
-          <div className="flex items-center gap-3 text-custom-text-200 shrink-0">
-             <span className="flex items-center justify-center w-3.5 h-3.5 text-xs">💰</span>
-             <span className="text-body-xs-medium">Rozpočet</span>
-          </div>
-          
-          {/* Pravá část: Hodnota */}
-          <div className="ml-auto text-body-xs-medium text-custom-text-100 truncate">
-             {issue.budget ? `${issue.budget} Kč` : "–"}
-          </div>
-        </div>
-        {/* ----------------------------- */}
-        
-
         {projectDetails?.module_view && (
           <SidebarPropertyListItem icon={ModuleIcon} label={t("common.modules")}>
             <IssueModuleSelect
@@ -265,6 +272,30 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
           <IssueLabel workspaceSlug={workspaceSlug} projectId={projectId} issueId={issueId} disabled={disabled} />
         </SidebarPropertyListItem>
 
+        {/* --- BUDGET INPUT (PEEK) --- */}
+        {showBudget && (
+          <div className="flex items-center gap-2 px-2 h-8 hover:bg-custom-background-80 rounded-md transition-colors group">
+            <div className="flex items-center gap-2 text-custom-text-200 shrink-0 w-24">
+               <span className="flex items-center justify-center text-xs">💰</span>
+               <span className="text-xs font-medium">Rozpočet</span>
+            </div>
+            
+            <div className="grow">
+               <input
+                type="number"
+                className="w-full bg-transparent text-right text-xs text-custom-text-100 placeholder:text-custom-text-400 focus:outline-none focus:bg-custom-background-90 rounded px-1 py-1"
+                placeholder="-"
+                value={budgetVal ?? ""}
+                onChange={(e) => setBudgetVal(e.target.value)}
+                onBlur={handleBudgetSave}
+                onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                disabled={disabled}
+              />
+            </div>
+          </div>
+        )}
+        
+        
         <IssueWorklogProperty
           workspaceSlug={workspaceSlug}
           projectId={projectId}
