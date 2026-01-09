@@ -121,6 +121,7 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
           />
         </SidebarPropertyListItem>
 
+
         {createdByDetails && (
           <SidebarPropertyListItem
             icon={UserCirclePropertyIcon}
@@ -201,6 +202,23 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
             />
           </SidebarPropertyListItem>
         )}
+
+        {/* --- BUDGET (PEEK OVERVIEW) --- */}
+        {/* Snažíme se napodobit styl SidebarPropertyListItem, ale bez nutnosti importovat ikonu */}
+        <div className="flex items-center gap-3 px-2 h-8 hover:bg-custom-background-80 rounded-sm transition-colors">
+          {/* Levá část: Ikonka + Název */}
+          <div className="flex items-center gap-3 text-custom-text-200 shrink-0">
+             <span className="flex items-center justify-center w-3.5 h-3.5 text-xs">💰</span>
+             <span className="text-body-xs-medium">Rozpočet</span>
+          </div>
+          
+          {/* Pravá část: Hodnota */}
+          <div className="ml-auto text-body-xs-medium text-custom-text-100 truncate">
+             {issue.budget ? `${issue.budget} Kč` : "–"}
+          </div>
+        </div>
+        {/* ----------------------------- */}
+        
 
         {projectDetails?.module_view && (
           <SidebarPropertyListItem icon={ModuleIcon} label={t("common.modules")}>
