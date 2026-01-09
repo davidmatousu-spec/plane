@@ -4,12 +4,12 @@ on:
   push:
     branches: [ "preview", "master" ]
     paths:
-      - "apiserver/**"  # Sledujeme složku backendu
+      - "apiserver/**"  # Spustí se jen když změníte něco v backendu
       - ".github/workflows/build-backend.yml"
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}-backend # POZOR: -backend
+  IMAGE_NAME: ${{ github.repository }}-backend # Důležité: přípona -backend
 
 jobs:
   build-and-push:
@@ -32,7 +32,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
-          context: ./apiserver # Cesta k backendu
+          context: ./apiserver
           file: ./apiserver/Dockerfile.api
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
