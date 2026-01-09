@@ -2,9 +2,9 @@ name: Build Frontend Image
 
 on:
   push:
-    branches: [ "preview", "master" ] # Spustí se při změně v preview nebo master
+    branches: [ "preview", "master" ]
     paths:
-      - "apps/web/**" # Jen když sáhnete do webu
+      - "apps/web/**"
       - ".github/workflows/build-frontend.yml"
 
 env:
@@ -22,6 +22,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # 1. Přidáme QEMU (emulátor pro sestavení jiné architektury)
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      # 2. Přidáme Docker Buildx (nástroj pro multi-platform build)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Log in to the Container registry
         uses: docker/login-action@v2
         with:
@@ -34,5 +42,7 @@ jobs:
         with:
           context: .
           file: ./apps/web/Dockerfile.web
+          # 3. Zde specifikujeme obě architektury
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
