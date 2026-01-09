@@ -34,7 +34,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           # ZMĚNA 2: Build kontext je kořen projektu (stejně jako u frontendu)
-          context: .
+          context: ./apps/api
           # ZMĚNA 3: Cesta k Dockerfile je v apps/api
           file: ./apps/api/Dockerfile.api
           push: true
