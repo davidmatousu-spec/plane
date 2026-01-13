@@ -30,6 +30,9 @@ import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useMember } from "@/hooks/store/use-member";
 import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
+// ---> OPRAVENÝ IMPORT ZDE: <---
+import { useUser } from "@/hooks/store/use-user"; 
+
 // plane web components
 import { WorkItemAdditionalSidebarProperties } from "@/plane-web/components/issues/issue-details/additional-properties";
 import { IssueParentSelectRoot } from "@/plane-web/components/issues/issue-details/parent-select-root";
@@ -40,7 +43,6 @@ import type { TIssueOperations } from "../issue-detail";
 import { IssueCycleSelect } from "../issue-detail/cycle-select";
 import { IssueLabel } from "../issue-detail/label";
 import { IssueModuleSelect } from "../issue-detail/module-select";
-import { useUser } from "@/hooks/store";
 
 // Vlastní ikonka bankovky/rozpočtu ve stylu Plane
 const BudgetPropertyIcon = (props: any) => (
@@ -52,7 +54,7 @@ const BudgetPropertyIcon = (props: any) => (
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
-    className={cn("size-3.5", props.className)} // Velikost 3.5 sedí k ostatním
+    className={cn("size-3.5", props.className)}
     {...props}
   >
     <rect width="20" height="12" x="2" y="6" rx="2" />
@@ -61,7 +63,7 @@ const BudgetPropertyIcon = (props: any) => (
   </svg>
 );
 
-
+// SEZNAM POVOLENÝCH EMAILŮ
 const ALLOWED_BUDGET_EMAILS = [
   "jan.novak@firma.cz",
   "petr.sef@firma.cz",
@@ -81,22 +83,22 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
   const { t } = useTranslation();
   
   // 1. Hooky
-  const { currentUser } = useUser();
+  const { currentUser } = useUser(); // Teď už by to mělo fungovat správně
   const { getProjectById } = useProject();
   const {
     issue: { getIssueById },
   } = useIssueDetail();
   const { getStateById } = useProjectState();
   const { getUserDetails } = useMember();
-  
-
 
   // 2. Definice Issue
   const issue = getIssueById(issueId);
 
-  // --- 3. BUDGET LOGIKA (UPDATE PRO FORMÁTOVÁNÍ) ---
+  // --- 3. BUDGET LOGIKA (UPDATE PRO FORMÁTOVÁNÍ + EMAIL CHECK) ---
   const [displayValue, setDisplayValue] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+
+  // Podmínka pro zobrazení: Musí existovat currentUser, musí mít email a ten email musí být v seznamu
   const showBudget = currentUser?.email && ALLOWED_BUDGET_EMAILS.includes(currentUser.email);
 
   // Pomocná funkce: 10000 -> "10 000 Kč"
@@ -115,20 +117,18 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
   // Handlery
   const handleFocus = () => {
     setIsEditing(true);
-    // Při kliknutí zobrazíme čisté číslo pro editaci (např. "10000")
+    // Při kliknutí zobrazíme čisté číslo pro editaci
     setDisplayValue(issue?.budget?.toString() ?? "");
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Povolíme psát cokoliv, validace proběhne až při uložení
     setDisplayValue(e.target.value);
   };
 
   const handleBlur = async () => {
     setIsEditing(false);
     
-    // Očistíme vstup od mezer a textu (např. "10 000 Kč" -> "10000")
-    // Regulární výraz odstraní vše kromě číslic
+    // Očistíme vstup od mezer a textu
     const rawValue = displayValue.replace(/[^\d]/g, ''); 
     const numVal = rawValue === "" ? null : Number(rawValue);
 
@@ -136,14 +136,12 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
     if (issue && numVal !== issue.budget) {
         try {
             await issueOperations.update(workspaceSlug, projectId, issueId, { budget: numVal });
-            // Hned po uložení naformátujeme novou hodnotu
             setDisplayValue(formatMoney(numVal));
         } catch (err) {
             console.error("Budget save failed", err);
-            setDisplayValue(formatMoney(issue.budget)); // Při chybě vrátíme zpět
+            setDisplayValue(formatMoney(issue.budget));
         }
     } else {
-        // Pokud se nic nezměnilo, jen vrátíme formátování
         setDisplayValue(formatMoney(numVal));
     }
   };
@@ -340,7 +338,7 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
           <IssueLabel workspaceSlug={workspaceSlug} projectId={projectId} issueId={issueId} disabled={disabled} />
         </SidebarPropertyListItem>
 
-        {/* --- BUDGET INPUT (S FORMÁTOVÁNÍM) --- */}
+        {/* --- BUDGET INPUT (ZABEZPEČENÝ) --- */}
         {showBudget && (
           <SidebarPropertyListItem icon={BudgetPropertyIcon} label="Rozpočet">
               <div className="w-full h-7.5 flex items-center">
