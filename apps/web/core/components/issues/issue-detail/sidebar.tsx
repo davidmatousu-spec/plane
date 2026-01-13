@@ -90,39 +90,62 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
   const { getUserDetails } = useMember();
   const { getStateById } = useProjectState();
   
-  // 2. Definice issue (MUSÍ být definováno před podmíněnými renderem, ale je to jen proměnná, ne hook)
+  // 2. Definice issue
   const issue = getIssueById(issueId);
 
-  // 3. Bezpečný State pro Budget
-  // Inicializujeme s undefined. Povolíme i string, aby input neřval při psaní.
-  const [budgetVal, setBudgetVal] = useState<number | string | null | undefined>(undefined);
+  // --- 3. BUDGET LOGIKA (S FORMÁTOVÁNÍM) ---
+  const [displayValue, setDisplayValue] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const showBudget = true;
 
-  // Synchronizace s DB při načtení issue
-  useEffect(() => {
-    if (issue && issue.budget !== undefined) {
-        setBudgetVal(issue.budget);
-    }
-  }, [issue?.budget]);
-
-  // 4. Show Logic - Povolíme všem
-  const showBudget = true; 
-
-  const handleBudgetSave = async () => {
-    // Checkujeme issue i issueOperations
-    // Porovnáváme volně (!=), protože budgetVal může být string "100" a issue.budget number 100
-    if (issue && budgetVal != issue.budget && issueOperations) {
-       // Konverze string -> number nebo null
-       const numVal = (budgetVal === "" || budgetVal === null || budgetVal === undefined) ? null : Number(budgetVal);
-       
-       try {
-           await issueOperations.update(workspaceSlug, projectId, issueId, { budget: numVal });
-       } catch (err) {
-           console.error("Budget save failed", err);
-       }
-    }
+  // Pomocná funkce: 10000 -> "10 000 Kč"
+  const formatMoney = (val: number | null | undefined) => {
+    if (val === null || val === undefined || isNaN(val)) return "";
+    return val.toLocaleString("cs-CZ") + " Kč";
   };
 
-  // 5. Teprve TEĎ můžeme ukončit funkci, pokud issue není (Rules of Hooks jsou splněny)
+  // Synchronizace: Když se načte issue a needitujeme, naformátujeme hodnotu
+  useEffect(() => {
+    if (!isEditing && issue) {
+       setDisplayValue(formatMoney(issue.budget));
+    }
+  }, [issue?.budget, isEditing]);
+
+  // Handlery
+  const handleFocus = () => {
+    setIsEditing(true);
+    // Zobrazíme čisté číslo pro editaci
+    setDisplayValue(issue?.budget?.toString() ?? "");
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDisplayValue(e.target.value);
+  };
+
+  const handleBlur = async () => {
+    setIsEditing(false);
+    
+    // Odstraníme vše kromě číslic (mezery, Kč, text)
+    const rawValue = displayValue.replace(/[^\d]/g, ''); 
+    const numVal = rawValue === "" ? null : Number(rawValue);
+
+    // Pokud je změna oproti DB, uložíme
+    if (issue && numVal !== issue.budget && issueOperations) {
+        try {
+            await issueOperations.update(workspaceSlug, projectId, issueId, { budget: numVal });
+            setDisplayValue(formatMoney(numVal));
+        } catch (err) {
+            console.error("Budget save failed", err);
+            setDisplayValue(formatMoney(issue.budget)); // Revert při chybě
+        }
+    } else {
+        // Jen přeformátujeme zpět
+        setDisplayValue(formatMoney(numVal));
+    }
+  };
+  // ------------------------------------------
+
+  // 4. Guard
   if (!issue) return <></>;
 
   const createdByDetails = getUserDetails(issue.created_by);
@@ -312,22 +335,23 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
               />
             </SidebarPropertyListItem>
 
-            {/* --- BUDGET INPUT (SIDEBAR - FIXED) --- */}
+            {/* --- BUDGET INPUT (SIDEBAR - FORMATTED) --- */}
             {showBudget && (
               <SidebarPropertyListItem icon={BudgetPropertyIcon} label="Rozpočet">
                 <div className="flex items-center w-full h-7.5 group">
                   <input
-                    type="number"
+                    type="text" // ZMĚNA NA TEXT PRO FORMÁTOVÁNÍ
                     className="w-full bg-transparent text-left text-body-xs-regular text-custom-text-100 placeholder:text-custom-text-400 focus:outline-none rounded px-1.5 py-0.5 transition-all"
-                    placeholder="Zadejte částku..."
-                    value={budgetVal ?? ""}
-                    onChange={(e) => setBudgetVal(e.target.value)}
-                    onBlur={handleBudgetSave}
+                    placeholder="-"
+                    value={displayValue}
+                    onFocus={handleFocus}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
                     onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
                     disabled={!isEditable}
                   />
-                  {/* Ikona tužky se zobrazí po najetí myší (volitelné, pro efekt editovatelnosti) */}
-                  {!budgetVal && isEditable && (
+                  {/* Ikona tužky pro efekt */}
+                  {!isEditing && !displayValue && isEditable && (
                     <span className="hidden group-hover:inline text-custom-text-400 ml-auto pr-2">✎</span>
                   )}
                 </div>

@@ -76,7 +76,7 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
   const { workspaceSlug, projectId, issueId, issueOperations, disabled } = props;
   const { t } = useTranslation();
   
-  // 1. Hooky (všechny hezky nahoře)
+  // 1. Hooky
   const { getProjectById } = useProject();
   const {
     issue: { getIssueById },
@@ -84,36 +84,65 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
   const { getStateById } = useProjectState();
   const { getUserDetails } = useMember();
 
-  // 2. Definice Issue (MUSÍ být před Budget Logikou)
+  // 2. Definice Issue
   const issue = getIssueById(issueId);
 
-  // 3. Budget Logika (Safe Mode)
-  // Inicializujeme undefined. Přidán typ 'string' pro bezproblémové psaní do inputu.
-  const [budgetVal, setBudgetVal] = useState<number | string | null | undefined>(undefined);
+  // --- 3. BUDGET LOGIKA (UPDATE PRO FORMÁTOVÁNÍ) ---
+  const [displayValue, setDisplayValue] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const showBudget = true; // Povoleno vždy
 
-  // Synchronizace s databází
-  useEffect(() => {
-    if (issue && issue.budget !== undefined) {
-       setBudgetVal(issue.budget);
-    }
-  }, [issue?.budget]);
-
-  // Povolíme všem (abychom se vyhnuli importu useUser a pádu)
-  const showBudget = true;
-
-  // Uložení
-  const handleBudgetSave = async () => {
-    if (issue && budgetVal != issue.budget) {
-       const numVal = (budgetVal === "" || budgetVal === null || budgetVal === undefined) ? null : Number(budgetVal);
-       try {
-           await issueOperations.update(workspaceSlug, projectId, issueId, { budget: numVal });
-       } catch (err) {
-           console.error("Budget save failed", err);
-       }
-    }
+  // Pomocná funkce: 10000 -> "10 000 Kč"
+  const formatMoney = (val: number | null | undefined) => {
+    if (val === null || val === undefined || isNaN(val)) return "";
+    return val.toLocaleString("cs-CZ") + " Kč";
   };
 
-  // 4. Guard - pokud issue není, končíme
+  // Synchronizace: Když přijdou data z DB a uživatel nepíše, naformátujeme je
+  useEffect(() => {
+    if (!isEditing && issue) {
+       setDisplayValue(formatMoney(issue.budget));
+    }
+  }, [issue?.budget, isEditing]);
+
+  // Handlery
+  const handleFocus = () => {
+    setIsEditing(true);
+    // Při kliknutí zobrazíme čisté číslo pro editaci (např. "10000")
+    setDisplayValue(issue?.budget?.toString() ?? "");
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Povolíme psát cokoliv, validace proběhne až při uložení
+    setDisplayValue(e.target.value);
+  };
+
+  const handleBlur = async () => {
+    setIsEditing(false);
+    
+    // Očistíme vstup od mezer a textu (např. "10 000 Kč" -> "10000")
+    // Regulární výraz odstraní vše kromě číslic
+    const rawValue = displayValue.replace(/[^\d]/g, ''); 
+    const numVal = rawValue === "" ? null : Number(rawValue);
+
+    // Pokud se hodnota liší od DB, uložíme
+    if (issue && numVal !== issue.budget) {
+        try {
+            await issueOperations.update(workspaceSlug, projectId, issueId, { budget: numVal });
+            // Hned po uložení naformátujeme novou hodnotu
+            setDisplayValue(formatMoney(numVal));
+        } catch (err) {
+            console.error("Budget save failed", err);
+            setDisplayValue(formatMoney(issue.budget)); // Při chybě vrátíme zpět
+        }
+    } else {
+        // Pokud se nic nezměnilo, jen vrátíme formátování
+        setDisplayValue(formatMoney(numVal));
+    }
+  };
+  // ----------------------------------------------------
+
+  // 4. Guard
   if (!issue) return <></>;
 
   // 5. Zbytek proměnných
@@ -304,21 +333,22 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
           <IssueLabel workspaceSlug={workspaceSlug} projectId={projectId} issueId={issueId} disabled={disabled} />
         </SidebarPropertyListItem>
 
-        {/* --- BUDGET INPUT (PEEK - FIXED) --- */}
+        {/* --- BUDGET INPUT (S FORMÁTOVÁNÍM) --- */}
         {showBudget && (
           <SidebarPropertyListItem icon={BudgetPropertyIcon} label="Rozpočet">
-             <div className="w-full h-7.5 flex items-center">
-               <input
-                type="number"
-                className="w-full bg-transparent text-left text-body-xs-medium text-custom-text-100 placeholder:text-custom-text-400 focus:outline-none rounded px-0 py-0.5"
-                placeholder="-"
-                value={budgetVal ?? ""}
-                onChange={(e) => setBudgetVal(e.target.value)}
-                onBlur={handleBudgetSave}
-                onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-                disabled={disabled}
-              />
-            </div>
+              <div className="w-full h-7.5 flex items-center">
+                <input
+                  type="text" // ZMĚNA NA TEXT, ABY POJAL "Kč" A MEZERY
+                  className="w-full bg-transparent text-left text-body-xs-medium text-custom-text-100 placeholder:text-custom-text-400 focus:outline-none rounded px-0 py-0.5"
+                  placeholder="-"
+                  value={displayValue}
+                  onFocus={handleFocus}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                  disabled={disabled}
+                />
+              </div>
           </SidebarPropertyListItem>
         )}
         
