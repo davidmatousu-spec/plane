@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { observer } from "mobx-react";
 // i18n
 import { useTranslation } from "@plane/i18n";
@@ -39,7 +40,7 @@ import type { TIssueOperations } from "../issue-detail";
 import { IssueCycleSelect } from "../issue-detail/cycle-select";
 import { IssueLabel } from "../issue-detail/label";
 import { IssueModuleSelect } from "../issue-detail/module-select";
-import { useState, useEffect } from "react";
+
 
 // Emaily (zatím jen konstanta, logika práv je zjednodušená)
 const ALLOWED_BUDGET_USERS = ["david.matousu@gmail.com", "vas.kolega@firma.cz"];
@@ -68,8 +69,8 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
   const issue = getIssueById(issueId);
 
   // 3. Budget Logika (Safe Mode)
-  // Inicializujeme undefined, abychom nepadali na ReferenceError
-  const [budgetVal, setBudgetVal] = useState<number | null | undefined>(undefined);
+  // Inicializujeme undefined. Přidán typ 'string' pro bezproblémové psaní do inputu.
+  const [budgetVal, setBudgetVal] = useState<number | string | null | undefined>(undefined);
 
   // Synchronizace s databází
   useEffect(() => {
@@ -84,7 +85,7 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
   // Uložení
   const handleBudgetSave = async () => {
     if (issue && budgetVal != issue.budget) {
-       const numVal = budgetVal === "" ? null : Number(budgetVal);
+       const numVal = (budgetVal === "" || budgetVal === null || budgetVal === undefined) ? null : Number(budgetVal);
        try {
            await issueOperations.update(workspaceSlug, projectId, issueId, { budget: numVal });
        } catch (err) {

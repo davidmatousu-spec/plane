@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { observer } from "mobx-react";
 // i18n
 import { useTranslation } from "@plane/i18n";
@@ -41,7 +42,6 @@ import { IssueCycleSelect } from "./cycle-select";
 import { IssueLabel } from "./label";
 import { IssueModuleSelect } from "./module-select";
 import type { TIssueOperations } from "./root";
-import { useState, useEffect } from "react";
 
 // Emaily vyvolených (zatím nepoužito v logice, ale nechte to tu pro strýčka příhodu):
 const ALLOWED_BUDGET_USERS = ["david.matousu@gmail.com", "vas.kolega@firma.cz"];
@@ -70,26 +70,30 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
   const { getUserDetails } = useMember();
   const { getStateById } = useProjectState();
   
-  // 2. Definice issue
+  // 2. Definice issue (MUSÍ být definováno před podmíněnými renderem, ale je to jen proměnná, ne hook)
   const issue = getIssueById(issueId);
 
   // 3. Bezpečný State pro Budget
-  // Inicializujeme s undefined, aby se nestalo nic, dokud issue není načteno
-  const [budgetVal, setBudgetVal] = useState<number | null | undefined>(undefined);
+  // Inicializujeme s undefined. Povolíme i string, aby input neřval při psaní.
+  const [budgetVal, setBudgetVal] = useState<number | string | null | undefined>(undefined);
 
+  // Synchronizace s DB při načtení issue
   useEffect(() => {
     if (issue && issue.budget !== undefined) {
         setBudgetVal(issue.budget);
     }
   }, [issue?.budget]);
 
-  // 4. Show Logic - Povolíme všem (abychom se vyhnuli importu useUser a pádu aplikace)
+  // 4. Show Logic - Povolíme všem
   const showBudget = true; 
 
   const handleBudgetSave = async () => {
     // Checkujeme issue i issueOperations
+    // Porovnáváme volně (!=), protože budgetVal může být string "100" a issue.budget number 100
     if (issue && budgetVal != issue.budget && issueOperations) {
-       const numVal = budgetVal === "" ? null : Number(budgetVal);
+       // Konverze string -> number nebo null
+       const numVal = (budgetVal === "" || budgetVal === null || budgetVal === undefined) ? null : Number(budgetVal);
+       
        try {
            await issueOperations.update(workspaceSlug, projectId, issueId, { budget: numVal });
        } catch (err) {
@@ -97,9 +101,8 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
        }
     }
   };
-  // -------------------------------------------------------
 
-  // 5. Teprve TEĎ můžeme ukončit funkci, pokud issue není
+  // 5. Teprve TEĎ můžeme ukončit funkci, pokud issue není (Rules of Hooks jsou splněny)
   if (!issue) return <></>;
 
   const createdByDetails = getUserDetails(issue.created_by);
