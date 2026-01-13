@@ -30,8 +30,9 @@ import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useMember } from "@/hooks/store/use-member";
 import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
-// ---> OPRAVENÝ IMPORT ZDE: <---
-import { useUser } from "../../../hooks/store/user/use-user";
+
+// ---> FINÁLNÍ IMPORT (s aliasem @) <---
+import { useUserProfile } from "@/hooks/store/user/user-user-profile";
 
 // plane web components
 import { WorkItemAdditionalSidebarProperties } from "@/plane-web/components/issues/issue-details/additional-properties";
@@ -67,7 +68,9 @@ const BudgetPropertyIcon = (props: any) => (
 const ALLOWED_BUDGET_EMAILS = [
   "jan.novak@firma.cz",
   "petr.sef@firma.cz",
-  "finance@firma.cz"
+  "finance@firma.cz",
+  "david.matousu@gmail.com", 
+  "vas.email@zde.cz" 
 ];
 
 interface IPeekOverviewProperties {
@@ -83,7 +86,9 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
   const { t } = useTranslation();
   
   // 1. Hooky
-  const { currentUser } = useUser(); // Teď už by to mělo fungovat správně
+  // Používáme useUserProfile a přejmenujeme 'data' na 'currentUser'
+  const { data: currentUser } = useUserProfile(); 
+  
   const { getProjectById } = useProject();
   const {
     issue: { getIssueById },
@@ -94,11 +99,11 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
   // 2. Definice Issue
   const issue = getIssueById(issueId);
 
-  // --- 3. BUDGET LOGIKA (UPDATE PRO FORMÁTOVÁNÍ + EMAIL CHECK) ---
+  // --- 3. BUDGET LOGIKA ---
   const [displayValue, setDisplayValue] = useState("");
   const [isEditing, setIsEditing] = useState(false);
 
-  // Podmínka pro zobrazení: Musí existovat currentUser, musí mít email a ten email musí být v seznamu
+  // Podmínka pro zobrazení
   const showBudget = currentUser?.email && ALLOWED_BUDGET_EMAILS.includes(currentUser.email);
 
   // Pomocná funkce: 10000 -> "10 000 Kč"
@@ -107,7 +112,7 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
     return val.toLocaleString("cs-CZ") + " Kč";
   };
 
-  // Synchronizace: Když přijdou data z DB a uživatel nepíše, naformátujeme je
+  // Synchronizace
   useEffect(() => {
     if (!isEditing && issue) {
        setDisplayValue(formatMoney(issue.budget));
@@ -117,7 +122,6 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
   // Handlery
   const handleFocus = () => {
     setIsEditing(true);
-    // Při kliknutí zobrazíme čisté číslo pro editaci
     setDisplayValue(issue?.budget?.toString() ?? "");
   };
 
@@ -128,11 +132,9 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
   const handleBlur = async () => {
     setIsEditing(false);
     
-    // Očistíme vstup od mezer a textu
     const rawValue = displayValue.replace(/[^\d]/g, ''); 
     const numVal = rawValue === "" ? null : Number(rawValue);
 
-    // Pokud se hodnota liší od DB, uložíme
     if (issue && numVal !== issue.budget) {
         try {
             await issueOperations.update(workspaceSlug, projectId, issueId, { budget: numVal });
