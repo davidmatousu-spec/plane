@@ -40,6 +40,7 @@ import type { TIssueOperations } from "../issue-detail";
 import { IssueCycleSelect } from "../issue-detail/cycle-select";
 import { IssueLabel } from "../issue-detail/label";
 import { IssueModuleSelect } from "../issue-detail/module-select";
+import { useUser } from "@/hooks/store";
 
 // Vlastní ikonka bankovky/rozpočtu ve stylu Plane
 const BudgetPropertyIcon = (props: any) => (
@@ -61,8 +62,11 @@ const BudgetPropertyIcon = (props: any) => (
 );
 
 
-// Emaily (zatím jen konstanta, logika práv je zjednodušená)
-const ALLOWED_BUDGET_USERS = ["david.matousu@gmail.com", "vas.kolega@firma.cz"];
+const ALLOWED_BUDGET_EMAILS = [
+  "jan.novak@firma.cz",
+  "petr.sef@firma.cz",
+  "finance@firma.cz"
+];
 
 interface IPeekOverviewProperties {
   workspaceSlug: string;
@@ -77,12 +81,15 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
   const { t } = useTranslation();
   
   // 1. Hooky
+  const { currentUser } = useUser();
   const { getProjectById } = useProject();
   const {
     issue: { getIssueById },
   } = useIssueDetail();
   const { getStateById } = useProjectState();
   const { getUserDetails } = useMember();
+  
+
 
   // 2. Definice Issue
   const issue = getIssueById(issueId);
@@ -90,7 +97,7 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
   // --- 3. BUDGET LOGIKA (UPDATE PRO FORMÁTOVÁNÍ) ---
   const [displayValue, setDisplayValue] = useState("");
   const [isEditing, setIsEditing] = useState(false);
-  const showBudget = true; // Povoleno vždy
+  const showBudget = currentUser?.email && ALLOWED_BUDGET_EMAILS.includes(currentUser.email);
 
   // Pomocná funkce: 10000 -> "10 000 Kč"
   const formatMoney = (val: number | null | undefined) => {
@@ -338,7 +345,7 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
           <SidebarPropertyListItem icon={BudgetPropertyIcon} label="Rozpočet">
               <div className="w-full h-7.5 flex items-center">
                 <input
-                  type="text" // ZMĚNA NA TEXT, ABY POJAL "Kč" A MEZERY
+                  type="text" 
                   className="w-full bg-transparent text-left text-body-xs-medium text-custom-text-100 placeholder:text-custom-text-400 focus:outline-none rounded px-0 py-0.5"
                   placeholder="-"
                   value={displayValue}
