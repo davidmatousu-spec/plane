@@ -31,7 +31,7 @@ import { useMember } from "@/hooks/store/use-member";
 import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
 // ---> OPRAVENÝ IMPORT ZDE: <---
-import { useUser } from "@/hooks/store/use-user"; 
+import { useUser } from "@/hooks/store/user/use-user";
 
 // plane web components
 import { WorkItemAdditionalSidebarProperties } from "@/plane-web/components/issues/issue-details/additional-properties";
