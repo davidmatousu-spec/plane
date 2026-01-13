@@ -630,7 +630,7 @@ class IssueExpandSerializer(BaseSerializer):
 
     cycle = CycleLiteSerializer(source="issue_cycle.cycle", read_only=True)
     module = ModuleLiteSerializer(source="issue_module.module", read_only=True)
-
+    budget = serializers.IntegerField(required=False, allow_null=True)
     labels = serializers.SerializerMethodField()
     assignees = serializers.SerializerMethodField()
     state = StateLiteSerializer(read_only=True)
