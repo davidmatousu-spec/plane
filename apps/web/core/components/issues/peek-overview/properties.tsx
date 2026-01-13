@@ -103,8 +103,13 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
   const [displayValue, setDisplayValue] = useState("");
   const [isEditing, setIsEditing] = useState(false);
 
-  // Podmínka pro zobrazení
-  const showBudget = currentUser?.email && ALLOWED_BUDGET_EMAILS.includes(currentUser.email);
+  // Získáme email a převedeme na malá písmena pro porovnání
+  const userEmail = currentUser?.email?.toLowerCase();
+  
+  // Zjistíme, jestli je email v seznamu (taky převedeném na malá)
+  const isAllowed = userEmail && ALLOWED_BUDGET_EMAILS.some(e => e.toLowerCase() === userEmail);
+  
+  const showBudget = Boolean(isAllowed); // Převedeme na true/false
 
   // Pomocná funkce: 10000 -> "10 000 Kč"
   const formatMoney = (val: number | null | undefined) => {
@@ -131,7 +136,6 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
 
   const handleBlur = async () => {
     setIsEditing(false);
-    
     const rawValue = displayValue.replace(/[^\d]/g, ''); 
     const numVal = rawValue === "" ? null : Number(rawValue);
 
@@ -340,6 +344,41 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
           <IssueLabel workspaceSlug={workspaceSlug} projectId={projectId} issueId={issueId} disabled={disabled} />
         </SidebarPropertyListItem>
 
+        {/* --- BUDGET INPUT (ZABEZPEČENÝ) --- */}
+        {/* Dočasně odstraníme {showBudget && ...}, abychom viděli aspoň ten debug */}
+        
+          <SidebarPropertyListItem icon={BudgetPropertyIcon} label="Rozpočet">
+              <div className="w-full flex flex-col">
+                
+                {/* DEBUG INFO - SMAZAT PO ÚSPĚCHU */}
+                <div className="text-[10px] text-red-500 bg-red-50 border border-red-200 p-1 mb-1">
+                    DEBUG:<br/>
+                    Email: {currentUser?.email || "NULL"}<br/>
+                    Allowed: {showBudget ? "ANO" : "NE"}
+                </div>
+                {/* ------------------------------- */}
+
+                {/* Zobrazit input jen pokud je povoleno (nebo pro testování vždy) */}
+                {showBudget ? (
+                    <div className="w-full h-7.5 flex items-center">
+                        <input
+                        type="text" 
+                        className="w-full bg-transparent text-left text-body-xs-medium text-custom-text-100 placeholder:text-custom-text-400 focus:outline-none rounded px-0 py-0.5"
+                        placeholder="-"
+                        value={displayValue}
+                        onFocus={handleFocus}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                        disabled={disabled}
+                        />
+                    </div>
+                ) : (
+                    <span className="text-body-xs text-gray-400 italic">Skryto</span>
+                )}
+              </div>
+          </SidebarPropertyListItem>
+          
         {/* --- BUDGET INPUT (ZABEZPEČENÝ) --- */}
         {showBudget && (
           <SidebarPropertyListItem icon={BudgetPropertyIcon} label="Rozpočet">
