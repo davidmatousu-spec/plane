@@ -61,6 +61,7 @@ class IssueSerializer(BaseSerializer):
     type_id = serializers.PrimaryKeyRelatedField(
         source="type", queryset=IssueType.objects.all(), required=False, allow_null=True
     )
+    budget = serializers.IntegerField(required=False, allow_null=True)
 
     class Meta:
         model = Issue
