@@ -43,6 +43,26 @@ import { IssueLabel } from "./label";
 import { IssueModuleSelect } from "./module-select";
 import type { TIssueOperations } from "./root";
 
+// Vlastní ikonka bankovky/rozpočtu ve stylu Plane
+const BudgetPropertyIcon = (props: any) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={cn("size-3.5", props.className)} // Velikost 3.5 sedí k ostatním
+    {...props}
+  >
+    <rect width="20" height="12" x="2" y="6" rx="2" />
+    <circle cx="12" cy="12" r="2" />
+    <path d="M6 12h.01M18 12h.01" />
+  </svg>
+);
+
+
 // Emaily vyvolených (zatím nepoužito v logice, ale nechte to tu pro strýčka příhodu):
 const ALLOWED_BUDGET_USERS = ["david.matousu@gmail.com", "vas.kolega@firma.cz"];
 
@@ -292,31 +312,26 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
               />
             </SidebarPropertyListItem>
 
-            {/* --- BUDGET INPUT (SIDEBAR) --- */}
+            {/* --- BUDGET INPUT (SIDEBAR - FIXED) --- */}
             {showBudget && (
-              <div className="group flex items-center justify-between gap-2 px-2 py-1 hover:bg-custom-background-80 rounded-md transition-colors min-h-[2rem]">
-                {/* Levá část: Ikonka a Popisek */}
-                <div className="flex items-center gap-3 text-custom-text-200 shrink-0 w-28">
-                   {/* Ikonka */}
-                   <div className="flex items-center justify-center w-3.5 h-3.5 text-xs opacity-70">💰</div>
-                   {/* Text */}
-                   <span className="text-body-xs-regular text-custom-text-200">Rozpočet</span>
-                </div>
-                
-                {/* Pravá část: Input */}
-                <div className="flex-grow ml-2">
-                   <input
+              <SidebarPropertyListItem icon={BudgetPropertyIcon} label="Rozpočet">
+                <div className="flex items-center w-full h-7.5 group">
+                  <input
                     type="number"
-                    className="w-full bg-transparent text-left text-body-xs-regular text-custom-text-100 placeholder:text-custom-text-400 focus:outline-none focus:bg-custom-background-90 rounded px-1.5 py-0.5 transition-all"
-                    placeholder="-"
+                    className="w-full bg-transparent text-left text-body-xs-regular text-custom-text-100 placeholder:text-custom-text-400 focus:outline-none rounded px-1.5 py-0.5 transition-all"
+                    placeholder="Zadejte částku..."
                     value={budgetVal ?? ""}
                     onChange={(e) => setBudgetVal(e.target.value)}
                     onBlur={handleBudgetSave}
                     onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
                     disabled={!isEditable}
                   />
+                  {/* Ikona tužky se zobrazí po najetí myší (volitelné, pro efekt editovatelnosti) */}
+                  {!budgetVal && isEditable && (
+                    <span className="hidden group-hover:inline text-custom-text-400 ml-auto pr-2">✎</span>
+                  )}
                 </div>
-              </div>
+              </SidebarPropertyListItem>
             )}
             {/* ----------------------------- */}
 

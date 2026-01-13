@@ -41,6 +41,25 @@ import { IssueCycleSelect } from "../issue-detail/cycle-select";
 import { IssueLabel } from "../issue-detail/label";
 import { IssueModuleSelect } from "../issue-detail/module-select";
 
+// Vlastní ikonka bankovky/rozpočtu ve stylu Plane
+const BudgetPropertyIcon = (props: any) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={cn("size-3.5", props.className)} // Velikost 3.5 sedí k ostatním
+    {...props}
+  >
+    <rect width="20" height="12" x="2" y="6" rx="2" />
+    <circle cx="12" cy="12" r="2" />
+    <path d="M6 12h.01M18 12h.01" />
+  </svg>
+);
+
 
 // Emaily (zatím jen konstanta, logika práv je zjednodušená)
 const ALLOWED_BUDGET_USERS = ["david.matousu@gmail.com", "vas.kolega@firma.cz"];
@@ -285,18 +304,13 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
           <IssueLabel workspaceSlug={workspaceSlug} projectId={projectId} issueId={issueId} disabled={disabled} />
         </SidebarPropertyListItem>
 
-        {/* --- BUDGET INPUT (PEEK) --- */}
+        {/* --- BUDGET INPUT (PEEK - FIXED) --- */}
         {showBudget && (
-          <div className="flex items-center gap-2 px-2 h-8 hover:bg-custom-background-80 rounded-md transition-colors group">
-            <div className="flex items-center gap-2 text-custom-text-200 shrink-0 w-24">
-               <span className="flex items-center justify-center text-xs">💰</span>
-               <span className="text-xs font-medium">Rozpočet</span>
-            </div>
-            
-            <div className="grow">
+          <SidebarPropertyListItem icon={BudgetPropertyIcon} label="Rozpočet">
+             <div className="w-full h-7.5 flex items-center">
                <input
                 type="number"
-                className="w-full bg-transparent text-right text-xs text-custom-text-100 placeholder:text-custom-text-400 focus:outline-none focus:bg-custom-background-90 rounded px-1 py-1"
+                className="w-full bg-transparent text-left text-body-xs-medium text-custom-text-100 placeholder:text-custom-text-400 focus:outline-none rounded px-0 py-0.5"
                 placeholder="-"
                 value={budgetVal ?? ""}
                 onChange={(e) => setBudgetVal(e.target.value)}
@@ -305,7 +319,7 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
                 disabled={disabled}
               />
             </div>
-          </div>
+          </SidebarPropertyListItem>
         )}
         
         <IssueWorklogProperty
