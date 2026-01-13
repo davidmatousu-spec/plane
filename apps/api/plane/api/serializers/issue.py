@@ -107,7 +107,7 @@ class IssueSerializer(BaseSerializer):
                 member_id__in=data["assignees"],
             ).values_list("member_id", flat=True)
 
-        # Validate labels are from project
+        # Validate labels are from project 
         if data.get("labels", []):
             data["labels"] = Label.objects.filter(
                 project_id=self.context.get("project_id"), id__in=data["labels"]
