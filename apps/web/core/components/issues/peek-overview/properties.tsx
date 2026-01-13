@@ -86,15 +86,18 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
   const { t } = useTranslation();
   
   // 1. Hooky
-  // Používáme useUserProfile a přejmenujeme 'data' na 'currentUser'
-  const { data: currentUser } = useUserProfile(); 
-  
   const { getProjectById } = useProject();
   const {
     issue: { getIssueById },
   } = useIssueDetail();
   const { getStateById } = useProjectState();
   const { getUserDetails } = useMember();
+
+  // ---> ZMĚNA: Uložíme si celý výsledek hooku do proměnné, abychom ho prozkoumali
+  const userProfileRaw = useUserProfile(); 
+  // Zkusíme odhadnout, kde by data mohla být (pro jistotu)
+  // Někdy je to přímo ten objekt, někdy je to v .data, někdy v .user
+  const currentUser = userProfileRaw?.data || userProfileRaw?.user || userProfileRaw;
 
   // 2. Definice Issue
   const issue = getIssueById(issueId);
@@ -103,28 +106,24 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
   const [displayValue, setDisplayValue] = useState("");
   const [isEditing, setIsEditing] = useState(false);
 
-  // Získáme email a převedeme na malá písmena pro porovnání
+  // Převedeme na string pro bezpečné porovnání
   const userEmail = currentUser?.email?.toLowerCase();
-  
-  // Zjistíme, jestli je email v seznamu (taky převedeném na malá)
   const isAllowed = userEmail && ALLOWED_BUDGET_EMAILS.some(e => e.toLowerCase() === userEmail);
   
-  const showBudget = Boolean(isAllowed); // Převedeme na true/false
+  // Pro účely ladění zobrazíme input VŽDY, ale s informací, jestli by byl povolen
+  const showBudget = true; 
 
-  // Pomocná funkce: 10000 -> "10 000 Kč"
   const formatMoney = (val: number | null | undefined) => {
     if (val === null || val === undefined || isNaN(val)) return "";
     return val.toLocaleString("cs-CZ") + " Kč";
   };
 
-  // Synchronizace
   useEffect(() => {
     if (!isEditing && issue) {
        setDisplayValue(formatMoney(issue.budget));
     }
   }, [issue?.budget, isEditing]);
 
-  // Handlery
   const handleFocus = () => {
     setIsEditing(true);
     setDisplayValue(issue?.budget?.toString() ?? "");
@@ -344,40 +343,19 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
           <IssueLabel workspaceSlug={workspaceSlug} projectId={projectId} issueId={issueId} disabled={disabled} />
         </SidebarPropertyListItem>
 
-        {/* --- BUDGET INPUT (ZABEZPEČENÝ) --- */}
-        {/* Dočasně odstraníme {showBudget && ...}, abychom viděli aspoň ten debug */}
-        
-          <SidebarPropertyListItem icon={BudgetPropertyIcon} label="Rozpočet">
-              <div className="w-full flex flex-col">
-                
-                {/* DEBUG INFO - SMAZAT PO ÚSPĚCHU */}
-                <div className="text-[10px] text-red-500 bg-red-50 border border-red-200 p-1 mb-1">
-                    DEBUG:<br/>
-                    Email: {currentUser?.email || "NULL"}<br/>
-                    Allowed: {showBudget ? "ANO" : "NE"}
+        {/* DEBUG INFO - SMAZAT AŽ TO BUDE FUNGOVAT */}
+                <div className="text-[10px] text-red-500 bg-red-50 border border-red-200 p-1 mb-1 overflow-hidden break-all">
+                    <strong>DIAGNOSTIKA:</strong><br/>
+                    {/* 1. Vypíšeme, co hook vrací (klíče objektu) */}
+                    Keys: {JSON.stringify(Object.keys(userProfileRaw || {}))}<br/>
+                    
+                    {/* 2. Zkusíme vypsat email, pokud se nám ho podařilo najít */}
+                    Email found: {userEmail || "NENALEZEN"}<br/>
+                    
+                    {/* 3. Dumpneme celý objekt jako JSON (pokud to půjde) */}
+                    Raw: {JSON.stringify(userProfileRaw).slice(0, 100)}...
                 </div>
                 {/* ------------------------------- */}
-
-                {/* Zobrazit input jen pokud je povoleno (nebo pro testování vždy) */}
-                {showBudget ? (
-                    <div className="w-full h-7.5 flex items-center">
-                        <input
-                        type="text" 
-                        className="w-full bg-transparent text-left text-body-xs-medium text-custom-text-100 placeholder:text-custom-text-400 focus:outline-none rounded px-0 py-0.5"
-                        placeholder="-"
-                        value={displayValue}
-                        onFocus={handleFocus}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-                        disabled={disabled}
-                        />
-                    </div>
-                ) : (
-                    <span className="text-body-xs text-gray-400 italic">Skryto</span>
-                )}
-              </div>
-          </SidebarPropertyListItem>
           
         {/* --- BUDGET INPUT (ZABEZPEČENÝ) --- */}
         {showBudget && (
