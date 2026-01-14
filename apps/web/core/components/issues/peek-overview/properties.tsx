@@ -31,7 +31,7 @@ import { useMember } from "@/hooks/store/use-member";
 import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
 
-// ---> FINÁLNÍ IMPORT (s aliasem @) <---
+// Import hooku pro uživatele
 import { useUserProfile } from "@/hooks/store/user/user-user-profile";
 
 // plane web components
@@ -45,7 +45,7 @@ import { IssueCycleSelect } from "../issue-detail/cycle-select";
 import { IssueLabel } from "../issue-detail/label";
 import { IssueModuleSelect } from "../issue-detail/module-select";
 
-// Vlastní ikonka bankovky/rozpočtu ve stylu Plane
+// Vlastní ikonka bankovky
 const BudgetPropertyIcon = (props: any) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -64,13 +64,12 @@ const BudgetPropertyIcon = (props: any) => (
   </svg>
 );
 
-// SEZNAM POVOLENÝCH EMAILŮ
-const ALLOWED_BUDGET_EMAILS = [
-  "jan.novak@firma.cz",
-  "petr.sef@firma.cz",
-  "finance@firma.cz",
-  "david.matousu@gmail.com", 
-  "vas.email@zde.cz" 
+// --- KONFIGURACE OPRÁVNĚNÍ ---
+const ALLOWED_USERS = [
+  "d670304d-4017-4dd2-9641-6966fa60352a", // VAŠE ID (Nejbezpečnější)
+  "david.matousu@gmail.com",             // Váš email
+  "finance@firma.cz",                    // Další kolegové...
+  "jan.novak@firma.cz"
 ];
 
 interface IPeekOverviewProperties {
@@ -86,18 +85,19 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
   const { t } = useTranslation();
   
   // 1. Hooky
+  const userProfileStore = useUserProfile();
+  
+  // Bezpečné získání dat z MobX Store (podle vašeho logu)
+  // Zkoušíme cestu: store -> user -> data, nebo fallback přímo na .data
+  // @ts-ignore
+  const currentUserData = userProfileStore?.store?.user?.data || userProfileStore?.data;
+
   const { getProjectById } = useProject();
   const {
     issue: { getIssueById },
   } = useIssueDetail();
   const { getStateById } = useProjectState();
   const { getUserDetails } = useMember();
-
-  // ---> ZMĚNA: Uložíme si celý výsledek hooku do proměnné, abychom ho prozkoumali
-  const userProfileRaw = useUserProfile(); 
-  // Zkusíme odhadnout, kde by data mohla být (pro jistotu)
-  // Někdy je to přímo ten objekt, někdy je to v .data, někdy v .user
-  const currentUser = userProfileRaw?.data || userProfileRaw?.user || userProfileRaw;
 
   // 2. Definice Issue
   const issue = getIssueById(issueId);
@@ -106,12 +106,18 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
   const [displayValue, setDisplayValue] = useState("");
   const [isEditing, setIsEditing] = useState(false);
 
-  // Převedeme na string pro bezpečné porovnání
-  const userEmail = currentUser?.email?.toLowerCase();
-  const isAllowed = userEmail && ALLOWED_BUDGET_EMAILS.some(e => e.toLowerCase() === userEmail);
-  
-  // Pro účely ladění zobrazíme input VŽDY, ale s informací, jestli by byl povolen
-  const showBudget = true; 
+  // Získáme identifikátory aktuálního uživatele
+  const currentUserId = currentUserData?.id;
+  const currentUserEmail = currentUserData?.email?.toLowerCase();
+
+  // Ověření oprávnění (ID nebo Email)
+  const isAllowed = ALLOWED_USERS.some(allowed => {
+      const allowedLower = allowed.toLowerCase();
+      return allowedLower === currentUserId || allowedLower === currentUserEmail;
+  });
+
+  // Zobrazit pouze pokud je uživatel oprávněn
+  const showBudget = Boolean(isAllowed);
 
   const formatMoney = (val: number | null | undefined) => {
     if (val === null || val === undefined || isNaN(val)) return "";
@@ -152,10 +158,8 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
   };
   // ----------------------------------------------------
 
-  // 4. Guard
   if (!issue) return <></>;
 
-  // 5. Zbytek proměnných
   const createdByDetails = getUserDetails(issue?.created_by);
   const projectDetails = getProjectById(issue.project_id);
   const isEstimateEnabled = projectDetails?.estimate;
@@ -166,9 +170,6 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
 
   const maxDate = getDate(issue.target_date);
   maxDate?.setDate(maxDate.getDate());
-
-  // Pro jistotu si to vypíšeme do KONZOLE (F12), tam to aplikaci neshodí
-  console.log("🔍 DEBUG USER PROFILE:", userProfileRaw);
 
   return (
     <div>
@@ -346,39 +347,24 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
           <IssueLabel workspaceSlug={workspaceSlug} projectId={projectId} issueId={issueId} disabled={disabled} />
         </SidebarPropertyListItem>
 
-        {/* --- BUDGET INPUT --- */}
+        {/* --- BUDGET INPUT (FINAL) --- */}
+        {showBudget && (
           <SidebarPropertyListItem icon={BudgetPropertyIcon} label="Rozpočet">
-              <div className="w-full flex flex-col">
-                
-                {/* OPRAVENÝ DEBUG INFO - BEZ NEBEZPEČNÉHO JSON.STRINGIFY */}
-                <div className="text-[10px] text-red-500 bg-red-50 border border-red-200 p-1 mb-1 overflow-hidden break-all">
-                    <strong>DIAGNOSTIKA:</strong><br/>
-                    {/* Vypíšeme jen klíče (to je bezpečné) */}
-                    Keys: {JSON.stringify(Object.keys(userProfileRaw || {}))}<br/>
-                    Email found: {userEmail || "NENALEZEN"}<br/>
-                    <span className="font-bold">PRO PLNY VYPIS ZMACKNI F12 A PODIVEJ SE DO KONZOLE</span>
-                </div>
-                {/* ------------------------------- */}
-
-                {showBudget ? (
-                    <div className="w-full h-7.5 flex items-center">
-                        <input
-                        type="text" 
-                        className="w-full bg-transparent text-left text-body-xs-medium text-custom-text-100 placeholder:text-custom-text-400 focus:outline-none rounded px-0 py-0.5"
-                        placeholder="-"
-                        value={displayValue}
-                        onFocus={handleFocus}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-                        disabled={disabled}
-                        />
-                    </div>
-                ) : (
-                    <span className="text-body-xs text-gray-400 italic">Skryto (Email: {userEmail})</span>
-                )}
+              <div className="w-full h-7.5 flex items-center">
+                <input
+                  type="text" 
+                  className="w-full bg-transparent text-left text-body-xs-medium text-custom-text-100 placeholder:text-custom-text-400 focus:outline-none rounded px-0 py-0.5"
+                  placeholder="-"
+                  value={displayValue}
+                  onFocus={handleFocus}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                  disabled={disabled}
+                />
               </div>
           </SidebarPropertyListItem>
+        )}
         
         <IssueWorklogProperty
           workspaceSlug={workspaceSlug}
