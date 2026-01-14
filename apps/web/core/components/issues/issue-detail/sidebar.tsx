@@ -30,6 +30,10 @@ import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useMember } from "@/hooks/store/use-member";
 import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
+
+// ---> NOVÝ IMPORT <---
+import { useUserProfile } from "@/hooks/store/user/user-user-profile";
+
 // plane web components
 // components
 import { WorkItemAdditionalSidebarProperties } from "@/plane-web/components/issues/issue-details/additional-properties";
@@ -63,8 +67,13 @@ const BudgetPropertyIcon = (props: any) => (
 );
 
 
-// Emaily vyvolených (zatím nepoužito v logice, ale nechte to tu pro strýčka příhodu):
-const ALLOWED_BUDGET_USERS = ["david.matousu@gmail.com", "vas.kolega@firma.cz"];
+// --- KONFIGURACE OPRÁVNĚNÍ ---
+const ALLOWED_USERS = [
+  "d670304d-4017-4dd2-9641-6966fa60352a", // VAŠE ID
+  "david.matousu@gmail.com",             // Váš email
+  "finance@firma.cz",
+  "vas.kolega@firma.cz"
+];
 
 type Props = {
   workspaceSlug: string;
@@ -89,14 +98,29 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
   
   const { getUserDetails } = useMember();
   const { getStateById } = useProjectState();
+
+  // ---> ZÍSKÁNÍ UŽIVATELE (stejně jako v properties.tsx) <---
+  const userProfileStore = useUserProfile();
+  // @ts-ignore
+  const currentUserData = userProfileStore?.store?.user?.data || userProfileStore?.data;
   
   // 2. Definice issue
   const issue = getIssueById(issueId);
 
-  // --- 3. BUDGET LOGIKA (S FORMÁTOVÁNÍM) ---
+  // --- 3. BUDGET LOGIKA (S FORMÁTOVÁNÍM A OPRÁVNĚNÍM) ---
   const [displayValue, setDisplayValue] = useState("");
   const [isEditing, setIsEditing] = useState(false);
-  const showBudget = true;
+
+  // Kontrola oprávnění
+  const currentUserId = currentUserData?.id;
+  const currentUserEmail = currentUserData?.email?.toLowerCase();
+
+  const isAllowed = ALLOWED_USERS.some(allowed => {
+      const allowedLower = allowed.toLowerCase();
+      return allowedLower === currentUserId || allowedLower === currentUserEmail;
+  });
+
+  const showBudget = Boolean(isAllowed);
 
   // Pomocná funkce: 10000 -> "10 000 Kč"
   const formatMoney = (val: number | null | undefined) => {
@@ -335,7 +359,7 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
               />
             </SidebarPropertyListItem>
 
-            {/* --- BUDGET INPUT (SIDEBAR - FORMATTED) --- */}
+            {/* --- BUDGET INPUT (SIDEBAR - FORMATTED & SECURED) --- */}
             {showBudget && (
               <SidebarPropertyListItem icon={BudgetPropertyIcon} label="Rozpočet">
                 <div className="flex items-center w-full h-7.5 group">
