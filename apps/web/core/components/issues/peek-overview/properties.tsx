@@ -167,6 +167,9 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
   const maxDate = getDate(issue.target_date);
   maxDate?.setDate(maxDate.getDate());
 
+  // Pro jistotu si to vypíšeme do KONZOLE (F12), tam to aplikaci neshodí
+  console.log("🔍 DEBUG USER PROFILE:", userProfileRaw);
+
   return (
     <div>
       <h6 className="text-body-xs-medium">{t("common.properties")}</h6>
@@ -343,38 +346,39 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
           <IssueLabel workspaceSlug={workspaceSlug} projectId={projectId} issueId={issueId} disabled={disabled} />
         </SidebarPropertyListItem>
 
-        {/* DEBUG INFO - SMAZAT AŽ TO BUDE FUNGOVAT */}
+        {/* --- BUDGET INPUT --- */}
+          <SidebarPropertyListItem icon={BudgetPropertyIcon} label="Rozpočet">
+              <div className="w-full flex flex-col">
+                
+                {/* OPRAVENÝ DEBUG INFO - BEZ NEBEZPEČNÉHO JSON.STRINGIFY */}
                 <div className="text-[10px] text-red-500 bg-red-50 border border-red-200 p-1 mb-1 overflow-hidden break-all">
                     <strong>DIAGNOSTIKA:</strong><br/>
-                    {/* 1. Vypíšeme, co hook vrací (klíče objektu) */}
+                    {/* Vypíšeme jen klíče (to je bezpečné) */}
                     Keys: {JSON.stringify(Object.keys(userProfileRaw || {}))}<br/>
-                    
-                    {/* 2. Zkusíme vypsat email, pokud se nám ho podařilo najít */}
                     Email found: {userEmail || "NENALEZEN"}<br/>
-                    
-                    {/* 3. Dumpneme celý objekt jako JSON (pokud to půjde) */}
-                    Raw: {JSON.stringify(userProfileRaw).slice(0, 100)}...
+                    <span className="font-bold">PRO PLNY VYPIS ZMACKNI F12 A PODIVEJ SE DO KONZOLE</span>
                 </div>
                 {/* ------------------------------- */}
-          
-        {/* --- BUDGET INPUT (ZABEZPEČENÝ) --- */}
-        {showBudget && (
-          <SidebarPropertyListItem icon={BudgetPropertyIcon} label="Rozpočet">
-              <div className="w-full h-7.5 flex items-center">
-                <input
-                  type="text" 
-                  className="w-full bg-transparent text-left text-body-xs-medium text-custom-text-100 placeholder:text-custom-text-400 focus:outline-none rounded px-0 py-0.5"
-                  placeholder="-"
-                  value={displayValue}
-                  onFocus={handleFocus}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-                  disabled={disabled}
-                />
+
+                {showBudget ? (
+                    <div className="w-full h-7.5 flex items-center">
+                        <input
+                        type="text" 
+                        className="w-full bg-transparent text-left text-body-xs-medium text-custom-text-100 placeholder:text-custom-text-400 focus:outline-none rounded px-0 py-0.5"
+                        placeholder="-"
+                        value={displayValue}
+                        onFocus={handleFocus}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                        disabled={disabled}
+                        />
+                    </div>
+                ) : (
+                    <span className="text-body-xs text-gray-400 italic">Skryto (Email: {userEmail})</span>
+                )}
               </div>
           </SidebarPropertyListItem>
-        )}
         
         <IssueWorklogProperty
           workspaceSlug={workspaceSlug}
