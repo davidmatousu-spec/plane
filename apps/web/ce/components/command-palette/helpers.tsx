@@ -36,24 +36,34 @@ export const commandGroups: TCommandGroups = {
   issue: {
     icon: null,
     itemName: (issue: IWorkspaceIssueSearchResult) => (
-      <div className="flex gap-2">
-        <IssueIdentifier
-          projectId={issue.project_id}
-          issueTypeId={issue.type_id}
-          projectIdentifier={issue.project__identifier}
-          issueSequenceId={issue.sequence_id}
-          size="xs"
-        />{" "}
-        {issue.name}
+      // Hlavní kontejner
+      <div>
+        {/* Původní řádek s ID a názvem */}
+        <div className="flex items-center gap-2">
+          <IssueIdentifier
+            projectId={issue.project_id}
+            issueTypeId={issue.type_id}
+            projectIdentifier={issue.project__identifier}
+            issueSequenceId={issue.sequence_id}
+            size="xs"
+          />
+          <span>{issue.name}</span>
+        </div>
+        
+        {/* --- PŘIDAT TOTO --- */}
+        {issue.contact_person && (
+          <div className="mt-1 ml-6 text-xs text-custom-text-300">
+            Contact: {issue.contact_person}
+          </div>
+        )}
+        {/* ------------------- */}
       </div>
     ),
+    
+    // Zbytek nechat stejný
     path: (issue: IWorkspaceIssueSearchResult) =>
       generateWorkItemLink({
-        workspaceSlug: issue?.workspace__slug,
-        projectId: issue?.project_id,
-        issueId: issue?.id,
-        projectIdentifier: issue.project__identifier,
-        sequenceId: issue?.sequence_id,
+        // ...
       }),
     title: "Work items",
   },

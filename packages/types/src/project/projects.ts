@@ -164,6 +164,7 @@ export interface ISearchIssueResponse {
   state__name: string;
   workspace__slug: string;
   type_id: string;
+  contact_person: string;
 }
 
 export type TPartialProject = IPartialProject;
