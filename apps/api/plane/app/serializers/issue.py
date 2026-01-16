@@ -62,6 +62,7 @@ class IssueFlatSerializer(BaseSerializer):
             "sort_order",
             "is_draft",
             "budget",
+            "contact_person",
         ]
 
 
@@ -797,6 +798,7 @@ class IssueSerializer(DynamicBaseSerializer):
             "is_draft",
             "archived_at",
             "budget",
+            "contact_person",
         ]
         read_only_fields = fields
 
@@ -856,6 +858,8 @@ class IssueListDetailSerializer(serializers.Serializer):
             "attachment_count": instance.attachment_count,
             "link_count": instance.link_count,
             "budget": instance.budget,
+            "contact_person": instance.contact_person,
+            
         }
 
         # Handle expanded fields only when requested - using direct field access
