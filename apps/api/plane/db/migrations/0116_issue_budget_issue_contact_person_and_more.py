@@ -10,11 +10,6 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name='issue',
-            name='budget',
-            field=models.IntegerField(blank=True, null=True),
-        ),
-        migrations.AddField(
-            model_name='issue',
             name='contact_person',
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
