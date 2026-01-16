@@ -35,18 +35,33 @@ export const POWER_K_SEARCH_RESULTS_GROUPS_MAP: Record<TPowerKSearchResultsKeys,
     title: "Cycles",
   },
   issue: {
-    itemName: (workItem: IWorkspaceIssueSearchResult) => (
-      <div className="flex gap-2">
-        <IssueIdentifier
-          projectId={workItem.project_id}
-          issueTypeId={workItem.type_id}
-          projectIdentifier={workItem.project__identifier}
-          issueSequenceId={workItem.sequence_id}
-          size="xs"
-        />{" "}
-        {workItem.name}
-      </div>
-    ),
+    // --- UPRAVENÁ SEKCE 'issue' ---
+    itemName: (workItem: IWorkspaceIssueSearchResult) => {
+      // DEBUG VÝPISY
+      console.log("DEBUG Z POWER-K:", workItem);
+      console.log("DEBUG Z POWER-K (contact_person):", workItem.contact_person);
+
+      return (
+        <div>
+          {/* Původní kód pro zobrazení ID a jména */}
+          <div className="flex gap-2">
+            <IssueIdentifier
+              projectId={workItem.project_id}
+              issueTypeId={workItem.type_id}
+              projectIdentifier={workItem.project__identifier}
+              issueSequenceId={workItem.sequence_id}
+              size="xs"
+            />{" "}
+            {workItem.name}
+          </div>
+          {/* Červený debug text pro ověření */}
+          <div className="mt-1 ml-6 text-xs text-red-500">
+            DEBUG Contact: {workItem.contact_person || "STALE NIC"}
+          </div>
+        </div>
+      );
+    },
+    // ---------------------------------
     path: (workItem: IWorkspaceIssueSearchResult) =>
       generateWorkItemLink({
         workspaceSlug: workItem?.workspace__slug,
