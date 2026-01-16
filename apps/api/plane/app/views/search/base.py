@@ -228,7 +228,7 @@ class GlobalSearchEndpoint(BaseAPIView):
         )
 
     def filter_intakes(self, query, slug, project_id, workspace_search):
-        fields = ["name", "sequence_id", "project__identifier"]
+        fields = ["name", "sequence_id", "project__identifier", "contact_person"]
         q = Q()
         if query:
             for field in fields:
