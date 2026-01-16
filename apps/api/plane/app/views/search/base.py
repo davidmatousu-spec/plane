@@ -124,7 +124,7 @@ class GlobalSearchEndpoint(BaseAPIView):
         return final_issues.distinct().values(
             "name", "id", "sequence_id", "project__identifier",
             "project_id", "workspace__slug", "contact_person",
-        )[:100]```
+        )[:100]
 
     def filter_cycles(self, query, slug, project_id, workspace_search):
         fields = ["name"]
