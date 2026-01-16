@@ -1,6 +1,7 @@
 # Python imports
 import copy
 import json
+import sys
 
 # Django imports
 from rest_framework.filters import SearchFilter
@@ -209,17 +210,30 @@ class IssueViewSet(BaseViewSet):
 
 
     def filter_queryset(self, queryset):
-        # Necháme proběhnout standardní filtry (ComplexFilterBackend)
+        # 1. Zjistíme, jestli se tato metoda vůbec volá
+        print("DEBUG: ---> filter_queryset VOLANO <---", file=sys.stderr)
+        
+        # 2. Vypíšeme parametry, které přišly z frontendu
+        params = self.request.query_params
+        print(f"DEBUG: Params: {params}", file=sys.stderr)
+        
+        # 3. Zjistíme hodnotu 'search'
+        search_query = params.get("search")
+        print(f"DEBUG: Search query je: '{search_query}'", file=sys.stderr)
+
+        # Volání rodičovské metody (standardní filtry)
         queryset = super().filter_queryset(queryset)
         
-        # Získáme parametr ?search=... z URL
-        search_query = self.request.query_params.get("search")
-        
-        # Pokud uživatel něco hledá, použijeme naši utilitu (která umí contact_person!)
+        # 4. Naše vlastní logika
         if search_query:
+            print("DEBUG: Aplikuji search_issues...", file=sys.stderr)
+            from plane.utils.issue_search import search_issues
             queryset = search_issues(search_query, queryset)
             
-        return queryset    
+            # 5. Vypíšeme výsledný SQL dotaz (pro kontrolu, jestli tam je contact_person)
+            print(f"DEBUG: SQL: {queryset.query}", file=sys.stderr)
+            
+        return queryset  
 
     def apply_annotations(self, issues):
         issues = (
