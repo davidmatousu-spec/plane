@@ -1,5 +1,6 @@
 # Python imports
 import re
+import sys
 
 # Django imports
 from django.db import models
@@ -76,17 +77,25 @@ class GlobalSearchEndpoint(BaseAPIView):
         )
 
     def filter_issues(self, query, slug, project_id, workspace_search):
+        # --- DEBUG START ---
+        print("--- DEBUG: filter_issues v search/base.py ZAVOLÁNO ---", file=sys.stderr)
+        print(f"Hledaný text (query): '{query}'", file=sys.stderr)
+        # --- DEBUG END ---
+
         fields = ["name", "sequence_id", "project__identifier", "contact_person"]
         q = Q()
         if query:
             for field in fields:
                 if field == "sequence_id":
-                    # Match whole integers only (exclude decimal numbers)
                     sequences = re.findall(r"\b\d+\b", query)
                     for sequence_id in sequences:
                         q |= Q(**{"sequence_id": sequence_id})
                 else:
                     q |= Q(**{f"{field}__icontains": query})
+        
+        # --- DEBUG START ---
+        print(f"Vygenerovaný Q objekt: {q}", file=sys.stderr)
+        # --- DEBUG END ---
 
         issues = Issue.issue_objects.filter(
             q,
@@ -99,6 +108,11 @@ class GlobalSearchEndpoint(BaseAPIView):
         if workspace_search == "false" and project_id:
             issues = issues.filter(project_id=project_id)
 
+        # --- DEBUG START ---
+        # TOTO JE NEJDŮLEŽITĚJŠÍ VÝPIS!
+        print(f"FINÁLNÍ SQL DOTAZ: {issues.query}", file=sys.stderr)
+        # --- DEBUG END ---
+
         return issues.distinct().values(
             "name",
             "id",
@@ -106,7 +120,7 @@ class GlobalSearchEndpoint(BaseAPIView):
             "project__identifier",
             "project_id",
             "workspace__slug",
-            "contact_person",
+            "contact_person", # Důležité, aby tu bylo
         )[:100]
 
     def filter_cycles(self, query, slug, project_id, workspace_search):
