@@ -76,7 +76,7 @@ class GlobalSearchEndpoint(BaseAPIView):
         )
 
     def filter_issues(self, query, slug, project_id, workspace_search):
-        fields = ["name", "sequence_id", "project__identifier"]
+        fields = ["name", "sequence_id", "project__identifier", "contact_person"]
         q = Q()
         if query:
             for field in fields:
@@ -106,6 +106,7 @@ class GlobalSearchEndpoint(BaseAPIView):
             "project__identifier",
             "project_id",
             "workspace__slug",
+            "contact_person",
         )[:100]
 
     def filter_cycles(self, query, slug, project_id, workspace_search):
@@ -378,7 +379,7 @@ class SearchEndpoint(BaseAPIView):
                     response_data["project"] = list(projects)
 
                 elif query_type == "issue":
-                    fields = ["name", "sequence_id", "project__identifier"]
+                    fields = ["name", "sequence_id", "project__identifier", "contact_person"]
                     q = Q()
 
                     if query:
@@ -583,7 +584,7 @@ class SearchEndpoint(BaseAPIView):
                     response_data["project"] = list(projects)
 
                 elif query_type == "issue":
-                    fields = ["name", "sequence_id", "project__identifier"]
+                    fields = ["name", "sequence_id", "project__identifier", "contact_person"]
                     q = Q()
 
                     if query:
