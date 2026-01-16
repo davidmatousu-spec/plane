@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { User } from "lucide-react";
+
 import { observer } from "mobx-react";
 // i18n
 import { useTranslation } from "@plane/i18n";
@@ -75,6 +77,10 @@ const ALLOWED_USERS = [
   "vas.kolega@firma.cz"
 ];
 
+const ALLOWED_CONTACT_VIEWERS: string[] = [
+    // "tvoje-id", 
+];
+
 type Props = {
   workspaceSlug: string;
   projectId: string;
@@ -121,6 +127,41 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
   });
 
   const showBudget = Boolean(isAllowed);
+
+  // --- 4. CONTACT PERSON LOGIKA ---
+  const [contactPerson, setContactPerson] = useState(issue?.contact_person ?? "");
+  const [isContactEditing, setIsContactEditing] = useState(false);
+
+  // Oprávnění pro Contact Person (pokud je pole prázdné, vidí všichni)
+  const showContactPerson = ALLOWED_CONTACT_VIEWERS.length === 0 || ALLOWED_CONTACT_VIEWERS.includes(currentUserId ?? "");
+
+  // Synchronizace s DB
+  useEffect(() => {
+    if (!isContactEditing) {
+      setContactPerson(issue?.contact_person ?? "");
+    }
+  }, [issue?.contact_person, isContactEditing]);
+
+  // Uložení
+  const submitContactPerson = async () => {
+    setIsContactEditing(false);
+    const val = contactPerson.trim();
+    
+    // Pokud není změna, nic nedělej
+    if (val === (issue?.contact_person ?? "")) return;
+
+    try {
+      await issueOperations.update(workspaceSlug, projectId, issueId, {
+        contact_person: val,
+      });
+    } catch (error) {
+      console.error(error);
+      setContactPerson(issue?.contact_person ?? ""); // Revert
+    }
+  };
+  // --------------------------------
+
+
 
   // Pomocná funkce: 10000 -> "10 000 Kč"
   const formatMoney = (val: number | null | undefined) => {
@@ -188,6 +229,36 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
         <div className="h-full w-full overflow-y-auto px-6">
           <h5 className="mt-5 text-body-xs-medium">{t("common.properties")}</h5>
           <div className={`mb-2 mt-4 space-y-2.5 truncate ${!isEditable ? "opacity-60" : ""}`}>
+            {/* --- CONTACT PERSON INPUT --- */}
+            {showContactPerson && (
+              <SidebarPropertyListItem 
+                icon={<User className="size-3.5 text-custom-text-200" />} // Použita lucide ikona
+                label="Contact Person"
+              >
+                <div className="group flex w-full items-center h-7.5">
+                  <input
+                    type="text"
+                    className="w-full bg-transparent text-left text-body-xs-regular text-custom-text-100 placeholder:text-custom-text-400 focus:outline-none rounded px-1.5 py-0.5 transition-all"
+                    placeholder="Jméno..."
+                    value={contactPerson}
+                    onChange={(e) => setContactPerson(e.target.value)}
+                    onFocus={() => setIsContactEditing(true)}
+                    onBlur={submitContactPerson}
+                    onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                    disabled={!isEditable}
+                  />
+                  
+                  {/* Ikonka tužky */}
+                  {!isContactEditing && !contactPerson && isEditable && (
+                    <span className="hidden group-hover:inline text-custom-text-400 ml-auto pr-2">
+                      ✎
+                    </span>
+                  )}
+                </div>
+              </SidebarPropertyListItem>
+            )}
+            {/* ---------------------------- */}
+            
             <SidebarPropertyListItem icon={StatePropertyIcon} label={t("common.state")}>
               <StateDropdown
                 value={issue?.state_id}
