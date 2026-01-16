@@ -78,8 +78,8 @@ class GlobalSearchEndpoint(BaseAPIView):
 
     def filter_issues(self, query, slug, project_id, workspace_search):
         # --- DEBUG START ---
-        print("--- DEBUG: filter_issues v search/base.py ZAVOLÁNO ---", file=sys.stderr)
-        print(f"Hledaný text (query): '{query}'", file=sys.stderr)
+        print("--- DEBUG: filter_issues ZAVOLÁNO ---", file=sys.stderr)
+        print(f"Hledaný text: '{query}'", file=sys.stderr)
         # --- DEBUG END ---
 
         fields = ["name", "sequence_id", "project__identifier", "contact_person"]
@@ -97,31 +97,34 @@ class GlobalSearchEndpoint(BaseAPIView):
         print(f"Vygenerovaný Q objekt: {q}", file=sys.stderr)
         # --- DEBUG END ---
 
-        issues = Issue.issue_objects.filter(
-            q,
+        # 1. KROK: Základní queryset, který má VŠECHNY issues, ke kterým máš přístup
+        base_issues = Issue.issue_objects.filter(
             project__project_projectmember__member=self.request.user,
             project__project_projectmember__is_active=True,
             project__archived_at__isnull=True,
             workspace__slug=slug,
         )
+        print(f"DEBUG KROK 1: Počet issues PŘED hledáním: {base_issues.count()}", file=sys.stderr)
 
+        # 2. KROK: Aplikujeme náš vyhledávací Q objekt
+        searched_issues = base_issues.filter(q)
+        print(f"DEBUG KROK 2: Počet issues PO aplikaci Q objektu: {searched_issues.count()}", file=sys.stderr)
+
+        # 3. KROK: Aplikujeme filtr projektu (pokud je)
+        final_issues = searched_issues
         if workspace_search == "false" and project_id:
-            issues = issues.filter(project_id=project_id)
-
+            final_issues = final_issues.filter(project_id=project_id)
+        
+        print(f"DEBUG KROK 3: Počet issues PO filtru projektu: {final_issues.count()}", file=sys.stderr)
+        
         # --- DEBUG START ---
-        # TOTO JE NEJDŮLEŽITĚJŠÍ VÝPIS!
-        print(f"FINÁLNÍ SQL DOTAZ: {issues.query}", file=sys.stderr)
+        print(f"FINÁLNÍ SQL DOTAZ: {final_issues.query}", file=sys.stderr)
         # --- DEBUG END ---
 
-        return issues.distinct().values(
-            "name",
-            "id",
-            "sequence_id",
-            "project__identifier",
-            "project_id",
-            "workspace__slug",
-            "contact_person", # Důležité, aby tu bylo
-        )[:100]
+        return final_issues.distinct().values(
+            "name", "id", "sequence_id", "project__identifier",
+            "project_id", "workspace__slug", "contact_person",
+        )[:100]```
 
     def filter_cycles(self, query, slug, project_id, workspace_search):
         fields = ["name"]
