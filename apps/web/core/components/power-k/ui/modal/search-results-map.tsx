@@ -35,33 +35,30 @@ export const POWER_K_SEARCH_RESULTS_GROUPS_MAP: Record<TPowerKSearchResultsKeys,
     title: "Cycles",
   },
   issue: {
-    // --- UPRAVENÁ SEKCE 'issue' ---
-    itemName: (workItem: IWorkspaceIssueSearchResult) => {
-      // DEBUG VÝPISY
-      console.log("DEBUG Z POWER-K:", workItem);
-      console.log("DEBUG Z POWER-K (contact_person):", workItem.contact_person);
-
-      return (
-        <div>
-          {/* Původní kód pro zobrazení ID a jména */}
-          <div className="flex gap-2">
-            <IssueIdentifier
-              projectId={workItem.project_id}
-              issueTypeId={workItem.type_id}
-              projectIdentifier={workItem.project__identifier}
-              issueSequenceId={workItem.sequence_id}
-              size="xs"
-            />{" "}
-            {workItem.name}
-          </div>
-          {/* Červený debug text pro ověření */}
-          <div className="mt-1 ml-6 text-xs text-red-500">
-            DEBUG Contact: {workItem.contact_person || "STALE NIC"}
-          </div>
+    itemName: (workItem: IWorkspaceIssueSearchResult) => (
+      // Hlavní kontejner, který zarovná obsah na jeden řádek
+      <div className="flex w-full items-center justify-between gap-2">
+        
+        {/* Levá část: ID a Název (s oříznutím, pokud je dlouhý) */}
+        <div className="flex min-w-0 items-center gap-2">
+          <IssueIdentifier
+            projectId={workItem.project_id}
+            issueTypeId={workItem.type_id}
+            projectIdentifier={workItem.project__identifier}
+            issueSequenceId={workItem.sequence_id}
+            size="xs"
+          />
+          <span className="truncate">{workItem.name}</span>
         </div>
-      );
-    },
-    // ---------------------------------
+        
+        {/* Pravá část: Kontaktní osoba (zobrazí se, jen když existuje) */}
+        {workItem.contact_person && (
+          <span className="ml-2 flex-shrink-0 text-xs text-custom-text-300">
+            {workItem.contact_person}
+          </span>
+        )}
+      </div>
+    ),
     path: (workItem: IWorkspaceIssueSearchResult) =>
       generateWorkItemLink({
         workspaceSlug: workItem?.workspace__slug,
