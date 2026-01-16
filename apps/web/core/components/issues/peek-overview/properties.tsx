@@ -176,18 +176,27 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
 
   // Uložení
   const submitContactPerson = async () => {
-    setIsContactEditing(false);
     const val = contactPerson.trim();
-    
-    if (val === (issue?.contact_person ?? "")) return;
+    const oldVal = issue?.contact_person ?? "";
 
+    // Pokud není změna, jen ukončíme editaci
+    if (val === oldVal) {
+      setIsContactEditing(false);
+      return;
+    }
+
+    // DŮLEŽITÉ: setIsContactEditing(false) voláme až POTÉ, co se data odešlou.
+    // Kdybychom to zavolali hned na začátku, useEffect by nám okamžitě přepsal 
+    // novou hodnotu tou starou z databáze, protože server by nestihl odpovědět.
     try {
       await issueOperations.update(workspaceSlug, projectId, issueId, {
         contact_person: val,
       });
     } catch (error) {
       console.error(error);
-      setContactPerson(issue?.contact_person ?? "");
+      setContactPerson(oldVal); // Vrať starou hodnotu při chybě
+    } finally {
+      setIsContactEditing(false); // Ukonči editaci až teď
     }
   };
   // --------------------------------
