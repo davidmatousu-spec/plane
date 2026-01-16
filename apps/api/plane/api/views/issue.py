@@ -2192,7 +2192,7 @@ class IssueSearchEndpoint(BaseAPIView):
             else:
                 q |= Q(**{f"{field}__icontains": query})
 
-        # Filter issues
+        # Filter issues 
         issues = Issue.issue_objects.filter(
             q,
             project__project_projectmember__member=self.request.user,
