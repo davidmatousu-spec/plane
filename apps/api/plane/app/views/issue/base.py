@@ -191,7 +191,7 @@ class IssueListEndpoint(BaseAPIView):
 class IssueViewSet(BaseViewSet):
     model = Issue
     webhook_event = "issue"
-    search_fields = ["name"]
+    search_fields = ["name", "contact_person"]
     filter_backends = (ComplexFilterBackend,)
     filterset_class = IssueFilterSet
 
