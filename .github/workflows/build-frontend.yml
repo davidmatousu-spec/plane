@@ -6,6 +6,7 @@ on:
     paths:
       - "apps/web/**"
       - ".github/workflows/build-frontend.yml"
+      - "packages/types/**"
 
 env:
   REGISTRY: ghcr.io
