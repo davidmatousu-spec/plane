@@ -71,6 +71,9 @@ const ALLOWED_USERS = [
   "finance@firma.cz",                    // Další kolegové...
   "jan.novak@firma.cz"
 ];
+const ALLOWED_CONTACT_VIEWERS: string[] = []; // Prázdné = vidí všichni
+
+
 
 interface IPeekOverviewProperties {
   workspaceSlug: string;
@@ -157,6 +160,38 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
     }
   };
   // ----------------------------------------------------
+  // --- 4. CONTACT PERSON LOGIKA ---
+  const [contactPerson, setContactPerson] = useState(issue?.contact_person ?? "");
+  const [isContactEditing, setIsContactEditing] = useState(false);
+
+  // Oprávnění (pokud je pole prázdné, vidí všichni)
+  const showContactPerson = ALLOWED_CONTACT_VIEWERS.length === 0 || ALLOWED_CONTACT_VIEWERS.includes(currentUserId ?? "");
+
+  // Synchronizace s DB
+  useEffect(() => {
+    if (!isContactEditing) {
+      setContactPerson(issue?.contact_person ?? "");
+    }
+  }, [issue?.contact_person, isContactEditing]);
+
+  // Uložení
+  const submitContactPerson = async () => {
+    setIsContactEditing(false);
+    const val = contactPerson.trim();
+    
+    if (val === (issue?.contact_person ?? "")) return;
+
+    try {
+      await issueOperations.update(workspaceSlug, projectId, issueId, {
+        contact_person: val,
+      });
+    } catch (error) {
+      console.error(error);
+      setContactPerson(issue?.contact_person ?? "");
+    }
+  };
+  // --------------------------------
+
 
   if (!issue) return <></>;
 
@@ -175,6 +210,35 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
     <div>
       <h6 className="text-body-xs-medium">{t("common.properties")}</h6>
       <div className={`w-full space-y-3 mt-3 ${disabled ? "opacity-60" : ""}`}>
+        {/* --- CONTACT PERSON INPUT --- */}
+        {showContactPerson && (
+          <SidebarPropertyListItem 
+            icon={UserCirclePropertyIcon} // POUŽITO SPRÁVNĚ (bez < >)
+            label="Contact Person"
+          >
+              <div className="w-full h-7.5 flex items-center group">
+                <input
+                  type="text" 
+                  className="w-full bg-transparent text-left text-body-xs-medium text-custom-text-100 placeholder:text-custom-text-400 focus:outline-none rounded px-0 py-0.5"
+                  placeholder="Add name..."
+                  value={contactPerson}
+                  onChange={(e) => setContactPerson(e.target.value)}
+                  onFocus={() => setIsContactEditing(true)}
+                  onBlur={submitContactPerson}
+                  onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                  disabled={disabled} // V properties.tsx se používá "disabled"
+                />
+                
+                {/* Ikonka tužky */}
+                {!isContactEditing && !contactPerson && !disabled && (
+                    <span className="hidden group-hover:inline text-custom-text-400 ml-auto pr-2">
+                      ✎
+                    </span>
+                )}
+              </div>
+          </SidebarPropertyListItem>
+        )}
+        
         <SidebarPropertyListItem icon={StatePropertyIcon} label={t("common.state")}>
           <StateDropdown
             value={issue?.state_id}
