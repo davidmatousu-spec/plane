@@ -207,6 +207,20 @@ class IssueViewSet(BaseViewSet):
 
         return issues
 
+
+    def filter_queryset(self, queryset):
+        # Necháme proběhnout standardní filtry (ComplexFilterBackend)
+        queryset = super().filter_queryset(queryset)
+        
+        # Získáme parametr ?search=... z URL
+        search_query = self.request.query_params.get("search")
+        
+        # Pokud uživatel něco hledá, použijeme naši utilitu (která umí contact_person!)
+        if search_query:
+            queryset = search_issues(search_query, queryset)
+            
+        return queryset    
+
     def apply_annotations(self, issues):
         issues = (
             issues.annotate(
