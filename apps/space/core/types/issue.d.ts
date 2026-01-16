@@ -57,6 +57,7 @@ export interface IIssue extends Pick<
   | "link_count"
   | "estimate_point"
     "budget"
+    "contact_person"
 > {
   comments: TIssuePublicComment[];
   reaction_items: IIssueReaction[];
