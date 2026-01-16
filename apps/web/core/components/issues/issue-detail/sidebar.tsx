@@ -1,6 +1,4 @@
 import { useState, useEffect } from "react";
-import { User } from "lucide-react";
-
 import { observer } from "mobx-react";
 // i18n
 import { useTranslation } from "@plane/i18n";
@@ -229,28 +227,27 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
         <div className="h-full w-full overflow-y-auto px-6">
           <h5 className="mt-5 text-body-xs-medium">{t("common.properties")}</h5>
           <div className={`mb-2 mt-4 space-y-2.5 truncate ${!isEditable ? "opacity-60" : ""}`}>
-            {/* --- CONTACT PERSON INPUT --- */}
+            {/* --- KONTAKTNÍ OSOBA (OPRAVENO) --- */}
             {showContactPerson && (
               <SidebarPropertyListItem 
-                icon={<User className="size-3.5 text-custom-text-200" />} // Použita lucide ikona
+                // ZMĚNA ZDE: Nepoužívej <... />, předej jen název komponenty!
+                icon={UserCirclePropertyIcon} 
                 label="Contact Person"
               >
-                <div className="group flex w-full items-center h-7.5">
+                <div className="group flex w-full items-center gap-2">
                   <input
                     type="text"
-                    className="w-full bg-transparent text-left text-body-xs-regular text-custom-text-100 placeholder:text-custom-text-400 focus:outline-none rounded px-1.5 py-0.5 transition-all"
-                    placeholder="Jméno..."
+                    className="w-full bg-transparent text-sm text-custom-text-100 placeholder:text-custom-text-400 focus:outline-none"
+                    placeholder="Add name..."
                     value={contactPerson}
                     onChange={(e) => setContactPerson(e.target.value)}
                     onFocus={() => setIsContactEditing(true)}
                     onBlur={submitContactPerson}
                     onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-                    disabled={!isEditable}
+                    disabled={!isEditable} 
                   />
-                  
-                  {/* Ikonka tužky */}
-                  {!isContactEditing && !contactPerson && isEditable && (
-                    <span className="hidden group-hover:inline text-custom-text-400 ml-auto pr-2">
+                  {!isContactEditing && !contactPerson && (
+                    <span className="hidden text-custom-text-400 group-hover:block">
                       ✎
                     </span>
                   )}
