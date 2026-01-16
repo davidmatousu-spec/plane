@@ -201,6 +201,14 @@ def filter_name(params, issue_filter, method, prefix=""):
         issue_filter[f"{prefix}name__icontains"] = params.get("name")
     return issue_filter
 
+def filter_contact_person(params, issue_filter, method, prefix=""):
+    # Zkontrolujeme, jestli parametr existuje a není prázdný
+    val = params.get("contact_person", "")
+    if val and val != "null":
+        # Použijeme icontains pro vyhledávání části textu (case-insensitive)
+        issue_filter[f"{prefix}contact_person__icontains"] = val
+    return issue_filter
+
 
 def filter_created_at(params, issue_filter, method, prefix=""):
     if method == "GET":
@@ -436,6 +444,7 @@ def issue_filters(query_params, method, prefix=""):
         "created_by": filter_created_by,
         "logged_by": filter_logged_by,
         "name": filter_name,
+        "contact_person": filter_contact_person, 
         "created_at": filter_created_at,
         "updated_at": filter_updated_at,
         "start_date": filter_start_date,
