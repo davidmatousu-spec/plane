@@ -45,6 +45,10 @@ export const PowerKModalSearchResults = observer(function PowerKModalSearchResul
                 value = `${value}-${item.sequence_id}`;
               }
 
+              if ("contact_person" in item && item.contact_person) {
+                 value = `${value}-${item.contact_person}`;
+              }
+
               return (
                 <PowerKModalCommandItem
                   key={item.id}
