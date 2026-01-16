@@ -192,7 +192,7 @@ class IssueViewSet(BaseViewSet):
     model = Issue
     webhook_event = "issue"
     search_fields = ["name", "contact_person"]
-    filter_backends = (ComplexFilterBackend,)
+    filter_backends = (ComplexFilterBackend, SearchFilter)
     filterset_class = IssueFilterSet
 
     def get_serializer_class(self):
