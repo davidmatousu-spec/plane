@@ -2181,7 +2181,7 @@ class IssueSearchEndpoint(BaseAPIView):
             return Response({"issues": []}, status=status.HTTP_200_OK)
 
         # Build search query
-        fields = ["name", "sequence_id", "project__identifier"]
+        fields = ["name", "sequence_id", "project__identifier", "contact_person"]
         q = Q()
         for field in fields:
             if field == "sequence_id":
@@ -2213,6 +2213,7 @@ class IssueSearchEndpoint(BaseAPIView):
             "project__identifier",
             "project_id",
             "workspace__slug",
+            "contact_person",
         )[: int(limit)]
 
         return Response({"issues": issue_results}, status=status.HTTP_200_OK)

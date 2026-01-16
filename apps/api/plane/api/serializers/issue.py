@@ -62,6 +62,7 @@ class IssueSerializer(BaseSerializer):
         source="type", queryset=IssueType.objects.all(), required=False, allow_null=True
     )
     budget = serializers.IntegerField(required=False, allow_null=True)
+    contact_person = serializers.CharField(required=False, allow_null=True)
 
     class Meta:
         model = Issue
@@ -631,6 +632,7 @@ class IssueExpandSerializer(BaseSerializer):
     cycle = CycleLiteSerializer(source="issue_cycle.cycle", read_only=True)
     module = ModuleLiteSerializer(source="issue_module.module", read_only=True)
     budget = serializers.IntegerField(required=False, allow_null=True)
+    contact_person = serializers.CharField(required=False, allow_null=True)
     labels = serializers.SerializerMethodField()
     assignees = serializers.SerializerMethodField()
     state = StateLiteSerializer(read_only=True)
@@ -696,3 +698,4 @@ class IssueSearchSerializer(serializers.Serializer):
     project__identifier = serializers.CharField(required=True, help_text="Project identifier")
     project_id = serializers.CharField(required=True, help_text="Project ID")
     workspace__slug = serializers.CharField(required=True, help_text="Workspace slug")
+    contact_person = serializers.CharField(required=False, allow_null=True, help_text="Contact Person Name")

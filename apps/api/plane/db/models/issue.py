@@ -38,6 +38,7 @@ def get_default_properties():
         "estimate": True,
         "created_on": True,
         "updated_on": True,
+        "contact_person": True,
     }
 
 
@@ -53,6 +54,7 @@ def get_default_filters():
         "start_date": None,
         "target_date": None,
         "subscriber": None,
+        "contact_person": None,
     }
 
 
@@ -84,6 +86,7 @@ def get_default_display_properties():
         "state": True,
         "sub_issue_count": True,
         "updated_on": True,
+        "contact_person": True,
     }
 
 
@@ -159,6 +162,7 @@ class Issue(ProjectBaseModel):
     is_draft = models.BooleanField(default=False)
     external_source = models.CharField(max_length=255, null=True, blank=True)
     external_id = models.CharField(max_length=255, blank=True, null=True)
+    contact_person = models.CharField(max_length=255, null=True, blank=True) 
     type = models.ForeignKey(
         "db.IssueType",
         on_delete=models.SET_NULL,
@@ -699,6 +703,7 @@ class IssueVersion(ProjectBaseModel):
     modules = ArrayField(models.UUIDField(), blank=True, default=list)
     properties = models.JSONField(default=dict)  # issue properties
     meta = models.JSONField(default=dict)  # issue meta
+    contact_person = models.CharField(max_length=255, null=True, blank=True)
     last_saved_at = models.DateTimeField(default=timezone.now)
 
     issue = models.ForeignKey("db.Issue", on_delete=models.CASCADE, related_name="versions")
@@ -743,6 +748,7 @@ class IssueVersion(ProjectBaseModel):
                 state=issue.state_id,
                 estimate_point=issue.estimate_point_id,
                 name=issue.name,
+                contact_person=issue.contact_person, 
                 priority=issue.priority,
                 start_date=issue.start_date,
                 target_date=issue.target_date,
