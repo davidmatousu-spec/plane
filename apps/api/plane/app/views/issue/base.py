@@ -3,6 +3,7 @@ import copy
 import json
 
 # Django imports
+from rest_framework.filters import SearchFilter
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.contrib.postgres.fields import ArrayField
 from django.core.serializers.json import DjangoJSONEncoder
