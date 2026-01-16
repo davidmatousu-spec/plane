@@ -35,35 +35,39 @@ export const commandGroups: TCommandGroups = {
   },
   issue: {
     icon: null,
-    itemName: (issue: IWorkspaceIssueSearchResult) => (
-      // Hlavní kontejner
-      <div>
-        {/* Původní řádek s ID a názvem */}
-        <div className="flex items-center gap-2">
-          <IssueIdentifier
-            projectId={issue.project_id}
-            issueTypeId={issue.type_id}
-            projectIdentifier={issue.project__identifier}
-            issueSequenceId={issue.sequence_id}
-            size="xs"
-          />
-          <span>{issue.name}</span>
-        </div>
-        
-        {/* --- PŘIDAT TOTO --- */}
-        {issue.contact_person && (
-          <div className="mt-1 ml-6 text-xs text-custom-text-300">
-            Contact: {issue.contact_person}
+    itemName: (issue: IWorkspaceIssueSearchResult) => {
+      // --- Náš finální debug výpis ---
+      console.log("FINAL DEBUG - Data passed to itemName:", issue);
+      console.log("FINAL DEBUG - Contact Person value:", issue.contact_person);
+
+      return (
+        <div>
+          {/* Původní řádek s ID a názvem */}
+          <div className="flex items-center gap-2">
+            <IssueIdentifier
+              projectId={issue.project_id}
+              issueTypeId={issue.type_id}
+              projectIdentifier={issue.project__identifier}
+              issueSequenceId={issue.sequence_id}
+              size="xs"
+            />
+            <span>{issue.name}</span>
           </div>
-        )}
-        {/* ------------------- */}
-      </div>
-    ),
-    
-    // Zbytek nechat stejný
+
+          {/* Dočasně vypisujeme hodnotu natvrdo, abychom viděli, co se děje */}
+          <div className="mt-1 ml-6 text-xs text-red-500">
+            DEBUG Contact: {issue.contact_person || "NIC ZDE NENI"}
+          </div>
+        </div>
+      );
+    },
     path: (issue: IWorkspaceIssueSearchResult) =>
       generateWorkItemLink({
-        // ...
+        workspaceSlug: issue?.workspace__slug,
+        projectId: issue?.project_id,
+        issueId: issue?.id,
+        projectIdentifier: issue.project__identifier,
+        sequenceId: issue?.sequence_id,
       }),
     title: "Work items",
   },
