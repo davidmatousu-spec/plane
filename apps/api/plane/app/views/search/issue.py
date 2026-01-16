@@ -152,6 +152,7 @@ class IssueSearchEndpoint(BaseAPIView):
                 "state__name",
                 "state__group",
                 "state__color",
+                "contact_person",
             )[:100],
             status=status.HTTP_200_OK,
         )
