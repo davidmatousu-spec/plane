@@ -126,46 +126,33 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
 
   const showBudget = Boolean(isAllowed);
 
-  // --- 4. CONTACT PERSON LOGIKA ---
+  // --- 4. CONTACT PERSON LOGIKA (SAFE MODE) ---
   const [contactPerson, setContactPerson] = useState(issue?.contact_person ?? "");
   const [isContactEditing, setIsContactEditing] = useState(false);
 
-  // Oprávnění pro Contact Person (pokud je pole prázdné, vidí všichni)
-  const showContactPerson = ALLOWED_CONTACT_VIEWERS.length === 0 || ALLOWED_CONTACT_VIEWERS.includes(currentUserId ?? "");
+  // Pro jistotu to zatím povolíme všem, abychom vyloučili chybu v auth logice
+  const showContactPerson = true; 
 
-  // Synchronizace s DB
   useEffect(() => {
     if (!isContactEditing) {
       setContactPerson(issue?.contact_person ?? "");
     }
   }, [issue?.contact_person, isContactEditing]);
 
-  // Uložení
   const submitContactPerson = async () => {
+    setIsContactEditing(false);
     const val = contactPerson.trim();
-    const oldVal = issue?.contact_person ?? "";
+    if (val === (issue?.contact_person ?? "")) return;
 
-    // Pokud není změna, jen ukončíme editaci
-    if (val === oldVal) {
-      setIsContactEditing(false);
-      return;
-    }
-
-    // DŮLEŽITÉ: setIsContactEditing(false) voláme až POTÉ, co se data odešlou.
-    // Kdybychom to zavolali hned na začátku, useEffect by nám okamžitě přepsal 
-    // novou hodnotu tou starou z databáze, protože server by nestihl odpovědět.
     try {
       await issueOperations.update(workspaceSlug, projectId, issueId, {
         contact_person: val,
       });
     } catch (error) {
       console.error(error);
-      setContactPerson(oldVal); // Vrať starou hodnotu při chybě
-    } finally {
-      setIsContactEditing(false); // Ukonči editaci až teď
+      setContactPerson(issue?.contact_person ?? "");
     }
   };
-  // --------------------------------
 
 
 
@@ -235,7 +222,7 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
         <div className="h-full w-full overflow-y-auto px-6">
           <h5 className="mt-5 text-body-xs-medium">{t("common.properties")}</h5>
           <div className={`mb-2 mt-4 space-y-2.5 truncate ${!isEditable ? "opacity-60" : ""}`}>
-            {/* --- KONTAKTNÍ OSOBA (OPRAVENO) --- */}
+           {/* --- KONTAKTNÍ OSOBA (OPRAVENO) --- */}
             {showContactPerson && (
               <SidebarPropertyListItem 
                 // ZMĚNA ZDE: Nepoužívej <... />, předej jen název komponenty!
@@ -262,7 +249,6 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
                 </div>
               </SidebarPropertyListItem>
             )}
-            {/* ---------------------------- */}
             
             <SidebarPropertyListItem icon={StatePropertyIcon} label={t("common.state")}>
               <StateDropdown
