@@ -1,6 +1,10 @@
 # Python import
 from uuid import uuid4
 
+import re
+from django.utils.html import strip_tags
+
+
 # Django imports
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
@@ -180,6 +184,34 @@ class Issue(ProjectBaseModel):
         ordering = ("-created_at",)
 
     def save(self, *args, **kwargs):
+        # --- ZAČÁTEK: AUTOMATICKÉ PARSOVÁNÍ KONTAKTNÍ OSOBY ---
+        if self.description_html:
+            try:
+                # 1. Očistíme HTML na text
+                clean_text = strip_tags(self.description_html)
+                
+                # 2. Hledáme řádek "jméno, příjmení, pozice: Nějaké Jméno"
+                # re.IGNORECASE = je jedno jestli je to velké/malé písmo
+                # \s* = ignoruj mezery za dvojtečkou
+                # (.*) = vezmi zbytek řádku jako jméno
+                pattern = r"jméno, příjmení, pozice:\s*(.*)"
+                
+                match = re.search(pattern, clean_text, re.IGNORECASE)
+                
+                if match:
+                    # Získáme jméno a ořízneme mezery
+                    extracted_name = match.group(1).strip()
+                    
+                    # 3. Uložíme jen pokud jsme něco našli a liší se to od současného stavu
+                    if extracted_name and extracted_name != self.contact_person:
+                        # Ořízneme na 255 znaků (limit databáze)
+                        self.contact_person = extracted_name[:255]
+            except Exception as e:
+                # Tichá chyba - vypíšeme do logu, ale nerozbijeme ukládání issue
+                print(f"Chyba při parsování contact_person: {e}")
+        # --- KONEC AUTOMATIZACE ---
+
+        # Původní logika Plane (beze změn)
         if self.state is None:
             try:
                 from plane.db.models import State
@@ -244,10 +276,6 @@ class Issue(ProjectBaseModel):
                 else strip_tags(self.description_html)
             )
             super(Issue, self).save(*args, **kwargs)
-
-    def __str__(self):
-        """Return name of the issue"""
-        return f"{self.name} <{self.project.name}>"
 
 
 class IssueBlocker(ProjectBaseModel):
