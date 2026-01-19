@@ -194,9 +194,9 @@ class Issue(ProjectBaseModel):
                 # re.IGNORECASE = je jedno jestli je to velké/malé písmo
                 # \s* = ignoruj mezery za dvojtečkou
                 # (.*) = vezmi zbytek řádku jako jméno
-                pattern = r"jméno, příjmení, pozice:\s*(.*)"
+                pattern = r"jméno, příjmení, pozice:\s*(.*?)(?=\s*telefon:|$)"
                 
-                match = re.search(pattern, clean_text, re.IGNORECASE)
+                match = re.search(pattern, clean_text, re.IGNORECASE | re.DOTALL)
                 
                 if match:
                     # Získáme jméno a ořízneme mezery
