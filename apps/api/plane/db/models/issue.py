@@ -184,30 +184,47 @@ class Issue(ProjectBaseModel):
         ordering = ("-created_at",)
 
     def save(self, *args, **kwargs):
-        # --- ZAČÁTEK: AUTOMATICKÉ PARSOVÁNÍ KONTAKTNÍ OSOBY ---
+        # --- 1. AUTOMATIZACE A PŘÍMÝ ZÁPIS DO HISTORIE ---
         if self.description_html:
             try:
-                # 1. Očistíme HTML na text
+                # A. Parsování textu
                 clean_text = strip_tags(self.description_html)
-                
-                # 2. Hledáme řádek "jméno, příjmení, pozice: Nějaké Jméno"
-                # re.IGNORECASE = je jedno jestli je to velké/malé písmo
-                # \s* = ignoruj mezery za dvojtečkou
-                # (.*) = vezmi zbytek řádku jako jméno
-                pattern = r"jméno, příjmení, pozice:\s*(.*?)(?=\s*telefon:|$)"
-                
+                pattern = r"(?i)jméno, příjmení, pozice:\s*(.*?)(?=telefon|e-mail|$)"
                 match = re.search(pattern, clean_text, re.IGNORECASE | re.DOTALL)
                 
                 if match:
-                    # Získáme jméno a ořízneme mezery
-                    extracted_name = match.group(1).strip()
+                    extracted_name = match.group(1).strip()[:255]
                     
-                    # 3. Uložíme jen pokud jsme něco našli a liší se to od současného stavu
+                    # B. Pokud je hodnota nová, uložíme ji A zapíšeme aktivitu
                     if extracted_name and extracted_name != self.contact_person:
-                        # Ořízneme na 255 znaků (limit databáze)
-                        self.contact_person = extracted_name[:255]
+                        old_cp_value = self.contact_person # Uložíme si starou hodnotu pro historii
+                        self.contact_person = extracted_name
+                        
+                        # C. HARD ZÁPIS DO ACTIVITY LOGU (Obejítí Background Tasku)
+                        # Musíme importovat uvnitř, abychom se vyhnuli kruhové závislosti
+                        from django.apps import apps
+                        try:
+                            # Získáme model dynamicky
+                            IssueActivity = apps.get_model("db", "IssueActivity")
+                            
+                            # Vytvoříme záznam v historii HNED TEĎ
+                            IssueActivity.objects.create(
+                                issue_id=self.id,
+                                project_id=self.project_id,
+                                workspace_id=self.workspace_id,
+                                comment="updated the contact person to",
+                                verb="updated",
+                                field="contact_person", # Klíč pro frontend
+                                old_value=old_cp_value,
+                                new_value=extracted_name,
+                                actor_id=self.updated_by_id, # ID uživatele, co to uložil
+                                epoch=timezone.now().timestamp()
+                            )
+                            print(f"✅ Úspěšně zapsána aktivita pro contact_person: {extracted_name}")
+                        except Exception as act_err:
+                            print(f"❌ Chyba při zápisu aktivity: {act_err}")
+
             except Exception as e:
-                # Tichá chyba - vypíšeme do logu, ale nerozbijeme ukládání issue
                 print(f"Chyba při parsování contact_person: {e}")
         # --- KONEC AUTOMATIZACE ---
 
