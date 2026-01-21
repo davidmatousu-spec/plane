@@ -106,6 +106,48 @@ def track_description(
                 )
             )
 
+# Track changes in contact person
+def track_contact_person(
+    requested_data,
+    current_instance,
+    issue_id,
+    project_id,
+    workspace_id,
+    actor_id,
+    issue_activities,
+    epoch,
+):
+    # Porovnáme starou a novou hodnotu
+    if current_instance.get("contact_person") != requested_data.get("contact_person"):
+        # Zkontrolujeme poslední aktivitu, abychom nespamovali log (stejně jako u description)
+        last_activity = IssueActivity.objects.filter(issue_id=issue_id).order_by("-created_at").first()
+        
+        if (
+            last_activity is not None
+            and last_activity.field == "contact_person"
+            and str(actor_id) == str(last_activity.actor_id)
+        ):
+            # Pokud je to stejný uživatel a stejné pole, jen aktualizujeme čas a hodnotu
+            last_activity.created_at = timezone.now()
+            last_activity.new_value = requested_data.get("contact_person")
+            last_activity.save(update_fields=["created_at", "new_value"])
+        else:
+            # Jinak vytvoříme nový záznam
+            issue_activities.append(
+                IssueActivity(
+                    issue_id=issue_id,
+                    actor_id=actor_id,
+                    verb="updated",
+                    old_value=current_instance.get("contact_person"),
+                    new_value=requested_data.get("contact_person"),
+                    field="contact_person",  # TOTO JE KLÍČ PRO FRONTEND MAPU
+                    project_id=project_id,
+                    workspace_id=workspace_id,
+                    comment="updated the contact person to",
+                    epoch=epoch,
+                )
+            )
+
 
 # Track changes in parent issue
 def track_parent(
@@ -603,6 +645,7 @@ def update_issue_activity(
         "priority": track_priority,
         "state_id": track_state,
         "description_html": track_description,
+        "contact_person": track_contact_person,
         "target_date": track_target_date,
         "start_date": track_start_date,
         "label_ids": track_labels,

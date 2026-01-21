@@ -239,6 +239,30 @@ const activityDetails: {
     ),
     icon: <MessageSquareIcon size={12} className="text-secondary" aria-hidden="true" />,
   },
+  contact_person: {
+    message: (activity, showIssue) => (
+      <>
+        {activity.new_value ? (
+          <>
+            set the Contact Person to{" "}
+            <span className="font-medium text-primary break-all">
+              {activity.new_value}
+            </span>
+          </>
+        ) : (
+          <>removed the Contact Person</>
+        )}
+        {showIssue && (
+          <>
+            {" "}
+            for <IssueLink activity={activity} />
+          </>
+        )}
+      </>
+    ),
+    // Použijeme UsersIcon, který už je nahoře importovaný z "lucide-react"
+    icon: <UsersIcon size={12} className="text-secondary" aria-hidden="true" />,
+  },
   estimate_point: {
     message: (activity, showIssue) => {
       if (!activity.new_value)
