@@ -663,6 +663,29 @@ def update_issue_activity(
     requested_data = json.loads(requested_data) if requested_data is not None else None
     current_instance = json.loads(current_instance) if current_instance is not None else None
 
+    fresh_issue = Issue.objects.filter(pk=issue_id).first()
+    
+    if fresh_issue and current_instance:
+        old_cp = current_instance.get("contact_person")
+        new_cp = fresh_issue.contact_person
+
+        # 2. Pokud se liší a zároveň to NENÍ v datech od frontendu (abychom to neměli dvakrát)
+        if old_cp != new_cp and (requested_data is None or "contact_person" not in requested_data):
+            issue_activities.append(
+                IssueActivity(
+                    issue_id=issue_id,
+                    actor_id=actor_id,
+                    verb="updated",
+                    old_value=old_cp,
+                    new_value=new_cp,
+                    field="contact_person", # Klíč pro frontend
+                    project_id=project_id,
+                    workspace_id=workspace_id,
+                    comment="updated the contact person to",
+                    epoch=epoch,
+                )
+            )
+            
     for key in requested_data:
         func = ISSUE_ACTIVITY_MAPPER.get(key)
         if func is not None:
