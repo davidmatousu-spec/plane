@@ -186,7 +186,7 @@ class Issue(ProjectBaseModel):
         db_table = "issues"
         ordering = ("-created_at",)
 
-    ef save(self, *args, **kwargs):
+    def save(self, *args, **kwargs):
         # ==============================================================================
         # 🤖 CUSTOM AUTOMATIZACE (Contact Person + Dealer)
         # ==============================================================================
