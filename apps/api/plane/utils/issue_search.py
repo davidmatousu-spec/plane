@@ -8,7 +8,7 @@ from django.db.models import Q
 
 
 def search_issues(query, queryset):
-    fields = ["name", "sequence_id", "project__identifier", "contact_person"]
+    fields = ["name", "sequence_id", "project__identifier", "contact_person", "dealer"]
     q = Q()
     for field in fields:
         if field == "sequence_id" and len(query) <= 20:

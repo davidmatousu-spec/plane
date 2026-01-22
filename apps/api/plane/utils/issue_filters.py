@@ -209,6 +209,14 @@ def filter_contact_person(params, issue_filter, method, prefix=""):
         issue_filter[f"{prefix}contact_person__icontains"] = val
     return issue_filter
 
+def filter_dealer(params, issue_filter, method, prefix=""):
+    # Check if the parameter exists and is not empty
+    val = params.get("dealer", "")
+    if val and val != "null":
+        # Use icontains for partial text search (case-insensitive)
+        issue_filter[f"{prefix}dealer__icontains"] = val
+    return issue_filter    
+
 
 def filter_created_at(params, issue_filter, method, prefix=""):
     if method == "GET":
@@ -445,6 +453,7 @@ def issue_filters(query_params, method, prefix=""):
         "logged_by": filter_logged_by,
         "name": filter_name,
         "contact_person": filter_contact_person, 
+        "dealer": filter_dealer,
         "created_at": filter_created_at,
         "updated_at": filter_updated_at,
         "start_date": filter_start_date,
