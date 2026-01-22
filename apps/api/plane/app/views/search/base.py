@@ -82,7 +82,7 @@ class GlobalSearchEndpoint(BaseAPIView):
         print(f"Hledaný text: '{query}'", file=sys.stderr)
         # --- DEBUG END ---
 
-        fields = ["name", "sequence_id", "project__identifier", "contact_person"]
+        fields = ["name", "sequence_id", "project__identifier", "contact_person", "dealer"]
         q = Q()
         if query:
             for field in fields:
@@ -123,7 +123,7 @@ class GlobalSearchEndpoint(BaseAPIView):
 
         return final_issues.distinct().values(
             "name", "id", "sequence_id", "project__identifier",
-            "project_id", "workspace__slug", "contact_person",
+            "project_id", "workspace__slug", "contact_person", "dealer",
         )[:100]
 
     def filter_cycles(self, query, slug, project_id, workspace_search):
@@ -245,7 +245,7 @@ class GlobalSearchEndpoint(BaseAPIView):
         )
 
     def filter_intakes(self, query, slug, project_id, workspace_search):
-        fields = ["name", "sequence_id", "project__identifier", "contact_person"]
+        fields = ["name", "sequence_id", "project__identifier", "contact_person", "dealer"]
         q = Q()
         if query:
             for field in fields:
@@ -396,7 +396,7 @@ class SearchEndpoint(BaseAPIView):
                     response_data["project"] = list(projects)
 
                 elif query_type == "issue":
-                    fields = ["name", "sequence_id", "project__identifier", "contact_person"]
+                    fields = ["name", "sequence_id", "project__identifier", "contact_person", "dealer"]
                     q = Q()
 
                     if query:
@@ -427,6 +427,8 @@ class SearchEndpoint(BaseAPIView):
                             "priority",
                             "state_id",
                             "type_id",
+                            "dealer",
+                            "contact_person"
                         )[:count]
                     )
                     response_data["issue"] = list(issues)
@@ -601,7 +603,7 @@ class SearchEndpoint(BaseAPIView):
                     response_data["project"] = list(projects)
 
                 elif query_type == "issue":
-                    fields = ["name", "sequence_id", "project__identifier", "contact_person"]
+                    fields = ["name", "sequence_id", "project__identifier", "contact_person", "dealer"]
                     q = Q()
 
                     if query:
