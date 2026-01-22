@@ -63,6 +63,7 @@ class IssueFlatSerializer(BaseSerializer):
             "is_draft",
             "budget",
             "contact_person",
+            "dealer",
         ]
 
 
@@ -799,6 +800,7 @@ class IssueSerializer(DynamicBaseSerializer):
             "archived_at",
             "budget",
             "contact_person",
+            "dealer",
         ]
         read_only_fields = fields
 
@@ -859,6 +861,7 @@ class IssueListDetailSerializer(serializers.Serializer):
             "link_count": instance.link_count,
             "budget": instance.budget,
             "contact_person": instance.contact_person,
+            "dealer": instance.dealer,
             
         }
 
