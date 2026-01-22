@@ -64,6 +64,27 @@ const BudgetPropertyIcon = (props: any) => (
   </svg>
 );
 
+// Ikonka pro Obchodníka (Dealer)
+const DealerPropertyIcon = (props: any) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={cn("size-3.5", props.className)}
+    {...props}
+  >
+    <path d="M3 21l18 0" />
+    <path d="M5 21v-7l8 -4l8 4v7" />
+    <path d="M19 10l0 -4.05c0 -.526 -.403 -.968 -.923 -1.03l-5.184 -.617a2.997 2.997 0 0 0 -3.766 1.636l-.127 .361" />
+  </svg>
+);
+
+
+
 // --- KONFIGURACE OPRÁVNĚNÍ ---
 const ALLOWED_USERS = [
   "d670304d-4017-4dd2-9641-6966fa60352a", // VAŠE ID (Nejbezpečnější)
@@ -191,6 +212,35 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
     }
   };
   // --------------------------------
+  
+  // --- 5. DEALER (OBCHODNÍK) LOGIKA ---
+  const [dealer, setDealer] = useState(issue?.dealer ?? "");
+  const [isDealerEditing, setIsDealerEditing] = useState(false);
+  const showDealer = true;
+
+  // Synchronizace s DB
+  useEffect(() => {
+    if (!isDealerEditing) {
+      setDealer(issue?.dealer ?? "");
+    }
+  }, [issue?.dealer, isDealerEditing]);
+
+  // Uložení
+  const submitDealer = async () => {
+    setIsDealerEditing(false);
+    const val = dealer.trim();
+    
+    if (val === (issue?.dealer ?? "")) return;
+
+    try {
+      await issueOperations.update(workspaceSlug, projectId, issueId, {
+        dealer: val,
+      });
+    } catch (error) {
+      console.error(error);
+      setDealer(issue?.dealer ?? "");
+    }
+  };
 
 
   if (!issue) return <></>;
@@ -231,6 +281,35 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
                 
                 {/* Ikonka tužky */}
                 {!isContactEditing && !contactPerson && !disabled && (
+                    <span className="hidden group-hover:inline text-custom-text-400 ml-auto pr-2">
+                      ✎
+                    </span>
+                )}
+              </div>
+          </SidebarPropertyListItem>
+        )}
+        
+        {/* --- DEALER / OBCHODNÍK INPUT --- */}
+        {showDealer && (
+          <SidebarPropertyListItem 
+            icon={DealerPropertyIcon} 
+            label="Obchodník"
+          >
+              <div className="w-full h-7.5 flex items-center group">
+                <input
+                  type="text" 
+                  className="w-full bg-transparent text-left text-body-xs-medium text-custom-text-100 placeholder:text-custom-text-400 focus:outline-none rounded px-0 py-0.5"
+                  placeholder="Vybrat obchodníka..."
+                  value={dealer}
+                  onChange={(e) => setDealer(e.target.value)}
+                  onFocus={() => setIsDealerEditing(true)}
+                  onBlur={submitDealer}
+                  onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                  disabled={disabled}
+                />
+                
+                {/* Ikonka tužky */}
+                {!isDealerEditing && !dealer && !disabled && (
                     <span className="hidden group-hover:inline text-custom-text-400 ml-auto pr-2">
                       ✎
                     </span>
