@@ -43,6 +43,7 @@ def get_default_properties():
         "created_on": True,
         "updated_on": True,
         "contact_person": True,
+        "dealer": True,
     }
 
 
@@ -91,6 +92,7 @@ def get_default_display_properties():
         "sub_issue_count": True,
         "updated_on": True,
         "contact_person": True,
+        "dealer": True,
     }
 
 
@@ -184,52 +186,83 @@ class Issue(ProjectBaseModel):
         db_table = "issues"
         ordering = ("-created_at",)
 
-    def save(self, *args, **kwargs):
-        # --- 1. AUTOMATIZACE A PŘÍMÝ ZÁPIS DO HISTORIE ---
+    ef save(self, *args, **kwargs):
+        # ==============================================================================
+        # 🤖 CUSTOM AUTOMATIZACE (Contact Person + Dealer)
+        # ==============================================================================
         if self.description_html:
             try:
-                # A. Parsování textu
-                clean_text = strip_tags(self.description_html)
-                pattern = r"(?i)jméno, příjmení, pozice:\s*(.*?)(?=telefon|e-mail|$)"
-                match = re.search(pattern, clean_text, re.IGNORECASE | re.DOTALL)
+                from django.utils.html import strip_tags
+                import re
+                from django.apps import apps
+                from django.utils import timezone
                 
-                if match:
-                    extracted_name = match.group(1).strip()[:255]
-                    
-                    # B. Pokud je hodnota nová, uložíme ji A zapíšeme aktivitu
+                # 1. Společné očištění textu pro všechny checky
+                clean_text = strip_tags(self.description_html)
+
+                # --- A. LOGIKA PRO CONTACT PERSON (Původní) ---
+                pattern_cp = r"(?i)jméno, příjmení, pozice:\s*(.*?)(?=telefon|e-mail|$)"
+                match_cp = re.search(pattern_cp, clean_text, re.IGNORECASE | re.DOTALL)
+                
+                if match_cp:
+                    extracted_name = match_cp.group(1).strip()[:255]
                     if extracted_name and extracted_name != self.contact_person:
-                        old_cp_value = self.contact_person # Uložíme si starou hodnotu pro historii
+                        old_cp_value = self.contact_person
                         self.contact_person = extracted_name
                         
-                        # C. HARD ZÁPIS DO ACTIVITY LOGU (Obejítí Background Tasku)
-                        # Musíme importovat uvnitř, abychom se vyhnuli kruhové závislosti
-                        from django.apps import apps
                         try:
-                            # Získáme model dynamicky
                             IssueActivity = apps.get_model("db", "IssueActivity")
-                            
-                            # Vytvoříme záznam v historii HNED TEĎ
                             IssueActivity.objects.create(
                                 issue_id=self.id,
                                 project_id=self.project_id,
                                 workspace_id=self.workspace_id,
                                 comment="updated the contact person to",
                                 verb="updated",
-                                field="contact_person", # Klíč pro frontend
+                                field="contact_person",
                                 old_value=old_cp_value,
                                 new_value=extracted_name,
-                                actor_id=self.updated_by_id, # ID uživatele, co to uložil
+                                actor_id=self.updated_by_id,
                                 epoch=timezone.now().timestamp()
                             )
-                            print(f"✅ Úspěšně zapsána aktivita pro contact_person: {extracted_name}")
-                        except Exception as act_err:
-                            print(f"❌ Chyba při zápisu aktivity: {act_err}")
+                        except Exception:
+                            pass
+
+                # --- B. NOVÁ LOGIKA PRO DEALER (Obchodník) ---
+                pattern_dealer = r"(?i)(?:Obchodník|Dealer):\s*(.*?)(?=Další sekce|$|\n)"
+                match_dealer = re.search(pattern_dealer, clean_text, re.IGNORECASE | re.DOTALL)
+
+                if match_dealer:
+                    extracted_dealer = match_dealer.group(1).strip()[:255]
+                    # Kontrola změny
+                    if extracted_dealer and extracted_dealer != self.dealer:
+                        old_dealer_val = self.dealer
+                        self.dealer = extracted_dealer
+                        
+                        try:
+                            IssueActivity = apps.get_model("db", "IssueActivity")
+                            IssueActivity.objects.create(
+                                issue_id=self.id,
+                                project_id=self.project_id,
+                                workspace_id=self.workspace_id,
+                                comment="updated the dealer to",
+                                verb="updated",
+                                field="dealer",     # Klíčové: musí sedět s názvem pole
+                                old_value=old_dealer_val,
+                                new_value=extracted_dealer,
+                                actor_id=self.updated_by_id,
+                                epoch=timezone.now().timestamp()
+                            )
+                        except Exception:
+                            pass
 
             except Exception as e:
-                print(f"Chyba při parsování contact_person: {e}")
-        # --- KONEC AUTOMATIZACE ---
+                print(f"❌ Chyba v custom automatizaci: {e}")
+        # ==============================================================================
+        # KONEC CUSTOM AUTOMATIZACE
+        # ==============================================================================
 
-        # Původní logika Plane (beze změn)
+
+        # --- STANDARDNÍ PLANE LOGIKA (NEMĚNIT) ---
         if self.state is None:
             try:
                 from plane.db.models import State
@@ -257,21 +290,16 @@ class Issue(ProjectBaseModel):
 
         if self._state.adding:
             with transaction.atomic():
-                # Create a lock for this specific project using a transaction-level advisory lock
-                # This ensures only one transaction per project can execute this code at a time
-                # The lock is automatically released when the transaction ends
                 lock_key = convert_uuid_to_integer(self.project.id)
 
                 with connection.cursor() as cursor:
-                    # Get an exclusive transaction-level lock using the project ID as the lock key
                     cursor.execute("SELECT pg_advisory_xact_lock(%s)", [lock_key])
 
-                # Get the last sequence for the project
                 last_sequence = IssueSequence.objects.filter(project=self.project).aggregate(
                     largest=models.Max("sequence")
                 )["largest"]
                 self.sequence_id = last_sequence + 1 if last_sequence else 1
-                # Strip the html tags using html parser
+                
                 self.description_stripped = (
                     None
                     if (self.description_html == "" or self.description_html is None)
@@ -287,7 +315,6 @@ class Issue(ProjectBaseModel):
 
                 IssueSequence.objects.create(issue=self, sequence=self.sequence_id, project=self.project)
         else:
-            # Strip the html tags using html parser
             self.description_stripped = (
                 None
                 if (self.description_html == "" or self.description_html is None)
