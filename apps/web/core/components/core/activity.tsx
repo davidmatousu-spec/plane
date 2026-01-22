@@ -263,6 +263,20 @@ const activityDetails: {
     // Použijeme UsersIcon, který už je nahoře importovaný z "lucide-react"
     icon: <UsersIcon size={12} className="text-secondary" aria-hidden="true" />,
   },
+  dealer: {
+  message: (activity, showIssue) => (
+    <>
+      aktualizoval obchodníka na <span className="font-medium text-custom-text-100">{activity.new_value}</span>
+      {showIssue && <> v úkolu <IssueLink activity={activity} /></>}
+    </>
+  ),
+  // Můžeš použít importovanou ikonku, nebo inline SVG jako v Sidebaru
+  icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-3">
+        <path d="M3 21l18 0" /><path d="M5 21v-7l8 -4l8 4v7" /><path d="M19 10l0 -4.05c0 -.526 -.403 -.968 -.923 -1.03l-5.184 -.617a2.997 2.997 0 0 0 -3.766 1.636l-.127 .361" />
+      </svg>
+  ),
+},
   estimate_point: {
     message: (activity, showIssue) => {
       if (!activity.new_value)

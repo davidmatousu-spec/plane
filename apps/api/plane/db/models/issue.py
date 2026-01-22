@@ -231,29 +231,29 @@ class Issue(ProjectBaseModel):
                 pattern_dealer = r"(?i)(?:Obchodník|Dealer):\s*(.*?)(?=Další sekce|$|\n)"
                 match_dealer = re.search(pattern_dealer, clean_text, re.IGNORECASE | re.DOTALL)
 
-                if match_dealer:
-                    extracted_dealer = match_dealer.group(1).strip()[:255]
-                    # Kontrola změny
-                    if extracted_dealer and extracted_dealer != self.dealer:
-                        old_dealer_val = self.dealer
-                        self.dealer = extracted_dealer
-                        
-                        try:
-                            IssueActivity = apps.get_model("db", "IssueActivity")
-                            IssueActivity.objects.create(
-                                issue_id=self.id,
-                                project_id=self.project_id,
-                                workspace_id=self.workspace_id,
-                                comment="updated the dealer to",
-                                verb="updated",
-                                field="dealer",     # Klíčové: musí sedět s názvem pole
-                                old_value=old_dealer_val,
-                                new_value=extracted_dealer,
-                                actor_id=self.updated_by_id,
-                                epoch=timezone.now().timestamp()
-                            )
-                        except Exception:
-                            pass
+               if not self._state.adding:
+            try:
+                # Získáme starou hodnotu z databáze
+                old_instance = Issue.objects.get(pk=self.pk)
+                if old_instance.dealer != self.dealer:
+                    from django.apps import apps
+                    from django.utils import timezone
+                    
+                    IssueActivity = apps.get_model("db", "IssueActivity")
+                    IssueActivity.objects.create(
+                        issue_id=self.id,
+                        project_id=self.project_id,
+                        workspace_id=self.workspace_id,
+                        comment="updated the dealer to",
+                        verb="updated",
+                        field="dealer",
+                        old_value=old_instance.dealer,
+                        new_value=self.dealer,
+                        actor_id=self.updated_by_id,
+                        epoch=timezone.now().timestamp()
+                    )
+            except Exception:
+                pass
 
             except Exception as e:
                 print(f"❌ Chyba v custom automatizaci: {e}")

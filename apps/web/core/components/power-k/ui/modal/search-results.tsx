@@ -49,6 +49,10 @@ export const PowerKModalSearchResults = observer(function PowerKModalSearchResul
                  value = `${value}-${item.contact_person}`;
               }
 
+              if (item.dealer) {
+                 value = `${value} ${item.dealer}`;
+              }
+
               return (
                 <PowerKModalCommandItem
                   key={item.id}
