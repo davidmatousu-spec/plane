@@ -150,6 +150,7 @@ class Issue(ProjectBaseModel):
     )
     start_date = models.DateField(null=True, blank=True)
     target_date = models.DateField(null=True, blank=True)
+    dealer = models.CharField(max_length=255, null=True, blank=True)
     assignees = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         blank=True,
@@ -734,6 +735,7 @@ class IssueVersion(ProjectBaseModel):
     )
     start_date = models.DateField(null=True, blank=True)
     target_date = models.DateField(null=True, blank=True)
+    dealer = models.CharField(max_length=255, null=True, blank=True)
     assignees = ArrayField(models.UUIDField(), blank=True, default=list)
     sequence_id = models.IntegerField(default=1, verbose_name="Issue Sequence ID")
     labels = ArrayField(models.UUIDField(), blank=True, default=list)
