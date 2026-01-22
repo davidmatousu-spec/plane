@@ -130,6 +130,7 @@ export interface IWorkspaceIssueSearchResult {
   workspace__slug: string;
   type_id: string;
   contact_person?: string;
+  dealer?: string;
 }
 
 export interface IWorkspacePageSearchResult {
@@ -145,6 +146,7 @@ export interface IWorkspaceProjectSearchResult {
   identifier: string;
   name: string;
   workspace__slug: string;
+  
 }
 
 export interface IWorkspaceSearchResults {
