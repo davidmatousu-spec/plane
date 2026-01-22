@@ -49,8 +49,8 @@ export const PowerKModalSearchResults = observer(function PowerKModalSearchResul
                  value = `${value}-${item.contact_person}`;
               }
 
-              if (item.dealer) {
-                 value = `${value} ${item.dealer}`;
+              if ("dealer" in item && item.dealer) {
+                value = `${value} ${item.dealer}`;
               }
 
               return (
