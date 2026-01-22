@@ -58,9 +58,9 @@ export const IssueActivityItem = observer(function IssueActivityItem(props: TIss
     case "description":
       return <IssueDescriptionActivity {...componentDefaultProps} showIssue={false} />;
     case "contact_person":
-      return <IssueDealerActivity {...componentDefaultProps} />;  
+      return <IssueContactActivity {...componentDefaultProps} />;  
     case "dealer":
-      return <IssueContactPersonActivity {...componentDefaultProps} />;        
+      return <IssueDealerPersonActivity {...componentDefaultProps} />;        
     case "assignees":
       return <IssueAssigneeActivity {...componentDefaultProps} showIssue={false} />;
     case "priority":
