@@ -188,24 +188,26 @@ class Issue(ProjectBaseModel):
 
     def save(self, *args, **kwargs):
         # ==============================================================================
-        # 🤖 CUSTOM AUTOMATIZACE (Contact Person + Dealer)
+        # 🤖 CUSTOM LOGIKA
         # ==============================================================================
+        
+        # 1. AUTOMATIZACE PRO CONTACT PERSON (Zůstává)
         if self.description_html:
             try:
                 from django.utils.html import strip_tags
                 import re
                 from django.apps import apps
                 from django.utils import timezone
-                
-                # 1. Společné očištění textu pro všechny checky
-                clean_text = strip_tags(self.description_html)
 
-                # --- A. LOGIKA PRO CONTACT PERSON (Původní) ---
+                clean_text = strip_tags(self.description_html)
+                
+                # Hledáme vzor pro Contact Person
                 pattern_cp = r"(?i)jméno, příjmení, pozice:\s*(.*?)(?=telefon|e-mail|$)"
                 match_cp = re.search(pattern_cp, clean_text, re.IGNORECASE | re.DOTALL)
                 
                 if match_cp:
                     extracted_name = match_cp.group(1).strip()[:255]
+                    # Pokud se hodnota liší, aktualizujeme a logujeme
                     if extracted_name and extracted_name != self.contact_person:
                         old_cp_value = self.contact_person
                         self.contact_person = extracted_name
@@ -226,15 +228,16 @@ class Issue(ProjectBaseModel):
                             )
                         except Exception:
                             pass
+            except Exception:
+                pass
 
-                # --- B. NOVÁ LOGIKA PRO DEALER (Obchodník) ---
-                pattern_dealer = r"(?i)(?:Obchodník|Dealer):\s*(.*?)(?=Další sekce|$|\n)"
-                match_dealer = re.search(pattern_dealer, clean_text, re.IGNORECASE | re.DOTALL)
-
-               if not self._state.adding:
+        # 2. HISTORIE PRO DEALER (Pouze sledování změny, bez parsování)
+        if not self._state.adding:
             try:
-                # Získáme starou hodnotu z databáze
+                # Načteme starou verzi z DB
                 old_instance = Issue.objects.get(pk=self.pk)
+                
+                # Pokud se dealer změnil (ručně v UI), zapíšeme aktivitu
                 if old_instance.dealer != self.dealer:
                     from django.apps import apps
                     from django.utils import timezone
@@ -255,18 +258,12 @@ class Issue(ProjectBaseModel):
             except Exception:
                 pass
 
-            except Exception as e:
-                print(f"❌ Chyba v custom automatizaci: {e}")
         # ==============================================================================
-        # KONEC CUSTOM AUTOMATIZACE
+        # STANDARDNÍ PLANE LOGIKA
         # ==============================================================================
-
-
-        # --- STANDARDNÍ PLANE LOGIKA (NEMĚNIT) ---
         if self.state is None:
             try:
                 from plane.db.models import State
-
                 default_state = State.objects.filter(
                     ~models.Q(is_triage=True), project=self.project, default=True
                 ).first()
@@ -280,7 +277,6 @@ class Issue(ProjectBaseModel):
         else:
             try:
                 from plane.db.models import State
-
                 if self.state.group == "completed":
                     self.completed_at = timezone.now()
                 else:
@@ -291,7 +287,6 @@ class Issue(ProjectBaseModel):
         if self._state.adding:
             with transaction.atomic():
                 lock_key = convert_uuid_to_integer(self.project.id)
-
                 with connection.cursor() as cursor:
                     cursor.execute("SELECT pg_advisory_xact_lock(%s)", [lock_key])
 
@@ -312,7 +307,6 @@ class Issue(ProjectBaseModel):
                     self.sort_order = largest_sort_order + 10000
 
                 super(Issue, self).save(*args, **kwargs)
-
                 IssueSequence.objects.create(issue=self, sequence=self.sequence_id, project=self.project)
         else:
             self.description_stripped = (
