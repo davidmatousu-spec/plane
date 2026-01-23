@@ -88,9 +88,8 @@ const DealerPropertyIcon = (props: any) => (
 // --- KONFIGURACE OPRÁVNĚNÍ ---
 const ALLOWED_USERS = [
   "d670304d-4017-4dd2-9641-6966fa60352a", // VAŠE ID (Nejbezpečnější)
-  "david.matousu@gmail.com",             // Váš email
-  "finance@firma.cz",                    // Další kolegové...
-  "jan.novak@firma.cz"
+  "david.matousu@gmail.com",                   
+  "adam.bosak@onixia.cz"
 ];
 const ALLOWED_CONTACT_VIEWERS: string[] = []; // Prázdné = vidí všichni
 
