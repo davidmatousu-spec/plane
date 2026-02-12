@@ -94,6 +94,11 @@ const ALLOWED_USERS = [
   "jan.pertl@onixia.cz"
 ];
 
+// Oprávnění pro Budget Complete (Vyčerpáno) - pouze vybraní uživatelé
+const ALLOWED_BUDGET_COMPLETE_USERS = [
+  "adam.bosak@onixia.cz",
+];
+
 const ALLOWED_CONTACT_VIEWERS: string[] = [
     // "tvoje-id", 
 ];
@@ -144,6 +149,14 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
   });
 
   const showBudget = Boolean(isAllowed);
+
+  // Kontrola oprávnění pro Budget Complete
+  const isBudgetCompleteAllowed = ALLOWED_BUDGET_COMPLETE_USERS.some(allowed => {
+      const allowedLower = allowed.toLowerCase();
+      return allowedLower === currentUserId || allowedLower === currentUserEmail;
+  });
+
+  const showBudgetComplete = Boolean(isBudgetCompleteAllowed);
 
   // --- 4. CONTACT PERSON LOGIKA (SAFE MODE) ---
   const [contactPerson, setContactPerson] = useState(issue?.contact_person ?? "");
@@ -218,6 +231,44 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
     } else {
         // Jen přeformátujeme zpět
         setDisplayValue(formatMoney(numVal));
+    }
+  };
+  // ------------------------------------------
+
+  // --- BUDGET COMPLETE (Vyčerpáno) LOGIKA ---
+  const [displayValueComplete, setDisplayValueComplete] = useState("");
+  const [isEditingComplete, setIsEditingComplete] = useState(false);
+
+  useEffect(() => {
+    if (!isEditingComplete && issue) {
+      setDisplayValueComplete(formatMoney(issue.budget_complete));
+    }
+  }, [issue?.budget_complete, isEditingComplete]);
+
+  const handleFocusComplete = () => {
+    setIsEditingComplete(true);
+    setDisplayValueComplete(issue?.budget_complete?.toString() ?? "");
+  };
+
+  const handleChangeComplete = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDisplayValueComplete(e.target.value);
+  };
+
+  const handleBlurComplete = async () => {
+    setIsEditingComplete(false);
+    const rawValue = displayValueComplete.replace(/[^\d]/g, '');
+    const numVal = rawValue === "" ? null : Number(rawValue);
+
+    if (issue && numVal !== issue.budget_complete && issueOperations) {
+      try {
+        await issueOperations.update(workspaceSlug, projectId, issueId, { budget_complete: numVal });
+        setDisplayValueComplete(formatMoney(numVal));
+      } catch (err) {
+        console.error("Budget complete save failed", err);
+        setDisplayValueComplete(formatMoney(issue.budget_complete));
+      }
+    } else {
+      setDisplayValueComplete(formatMoney(numVal));
     }
   };
   // ------------------------------------------
@@ -515,6 +566,28 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
                   />
                   {/* Ikona tužky pro efekt */}
                   {!isEditing && !displayValue && isEditable && (
+                    <span className="hidden group-hover:inline text-custom-text-400 ml-auto pr-2">✎</span>
+                  )}
+                </div>
+              </SidebarPropertyListItem>
+            )}
+
+            {/* --- BUDGET COMPLETE (Vyčerpáno) --- */}
+            {showBudgetComplete && (
+              <SidebarPropertyListItem icon={BudgetPropertyIcon} label="Vyčerpáno">
+                <div className="flex items-center w-full h-7.5 group">
+                  <input
+                    type="text"
+                    className="w-full bg-transparent text-left text-body-xs-regular text-custom-text-100 placeholder:text-custom-text-400 focus:outline-none rounded px-1.5 py-0.5 transition-all"
+                    placeholder="-"
+                    value={displayValueComplete}
+                    onFocus={handleFocusComplete}
+                    onChange={handleChangeComplete}
+                    onBlur={handleBlurComplete}
+                    onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                    disabled={!isEditable}
+                  />
+                  {!isEditingComplete && !displayValueComplete && isEditable && (
                     <span className="hidden group-hover:inline text-custom-text-400 ml-auto pr-2">✎</span>
                   )}
                 </div>

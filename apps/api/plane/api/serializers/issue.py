@@ -62,6 +62,7 @@ class IssueSerializer(BaseSerializer):
         source="type", queryset=IssueType.objects.all(), required=False, allow_null=True
     )
     budget = serializers.IntegerField(required=False, allow_null=True)
+    budget_complete = serializers.IntegerField(required=False, allow_null=True)
     contact_person = serializers.CharField(required=False, allow_null=True)
     dealer = serializers.CharField(required=False, allow_null=True)
 
@@ -633,6 +634,7 @@ class IssueExpandSerializer(BaseSerializer):
     cycle = CycleLiteSerializer(source="issue_cycle.cycle", read_only=True)
     module = ModuleLiteSerializer(source="issue_module.module", read_only=True)
     budget = serializers.IntegerField(required=False, allow_null=True)
+    budget_complete = serializers.IntegerField(required=False, allow_null=True)
     contact_person = serializers.CharField(required=False, allow_null=True)
     dealer = serializers.CharField(required=False, allow_null=True)
     labels = serializers.SerializerMethodField()

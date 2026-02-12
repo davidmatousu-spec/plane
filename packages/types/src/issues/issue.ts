@@ -46,6 +46,7 @@ export type TBaseIssue = {
   priority: TIssuePriorities | null;
   label_ids: string[];
   budget: number | null;
+  budget_complete: number | null;
   contact_person: string | null;
   dealer: string | null; 
   assignee_ids: string[];

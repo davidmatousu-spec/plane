@@ -62,6 +62,7 @@ class IssueFlatSerializer(BaseSerializer):
             "sort_order",
             "is_draft",
             "budget",
+            "budget_complete",
             "contact_person",
             "dealer",
         ]
@@ -799,6 +800,7 @@ class IssueSerializer(DynamicBaseSerializer):
             "is_draft",
             "archived_at",
             "budget",
+            "budget_complete",
             "contact_person",
             "dealer",
         ]
@@ -860,6 +862,7 @@ class IssueListDetailSerializer(serializers.Serializer):
             "attachment_count": instance.attachment_count,
             "link_count": instance.link_count,
             "budget": instance.budget,
+            "budget_complete": instance.budget_complete,
             "contact_person": instance.contact_person,
             "dealer": instance.dealer,
             

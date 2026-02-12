@@ -92,6 +92,12 @@ const ALLOWED_USERS = [
   "adam.bosak@onixia.cz",
   "jan.pertl@onixia.cz"
 ];
+
+// Oprávnění pro Budget Complete (Vyčerpáno) - pouze vybraní uživatelé
+const ALLOWED_BUDGET_COMPLETE_USERS = [
+  "adam.bosak@onixia.cz",
+];
+
 const ALLOWED_CONTACT_VIEWERS: string[] = []; // Prázdné = vidí všichni
 
 
@@ -143,6 +149,14 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
   // Zobrazit pouze pokud je uživatel oprávněn
   const showBudget = Boolean(isAllowed);
 
+  // Kontrola oprávnění pro Budget Complete
+  const isBudgetCompleteAllowed = ALLOWED_BUDGET_COMPLETE_USERS.some(allowed => {
+      const allowedLower = allowed.toLowerCase();
+      return allowedLower === currentUserId || allowedLower === currentUserEmail;
+  });
+
+  const showBudgetComplete = Boolean(isBudgetCompleteAllowed);
+
   const formatMoney = (val: number | null | undefined) => {
     if (val === null || val === undefined || isNaN(val)) return "";
     return val.toLocaleString("cs-CZ") + " Kč";
@@ -181,6 +195,45 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
     }
   };
   // ----------------------------------------------------
+
+  // --- BUDGET COMPLETE (Vyčerpáno) LOGIKA ---
+  const [displayValueComplete, setDisplayValueComplete] = useState("");
+  const [isEditingComplete, setIsEditingComplete] = useState(false);
+
+  useEffect(() => {
+    if (!isEditingComplete && issue) {
+      setDisplayValueComplete(formatMoney(issue.budget_complete));
+    }
+  }, [issue?.budget_complete, isEditingComplete]);
+
+  const handleFocusComplete = () => {
+    setIsEditingComplete(true);
+    setDisplayValueComplete(issue?.budget_complete?.toString() ?? "");
+  };
+
+  const handleChangeComplete = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDisplayValueComplete(e.target.value);
+  };
+
+  const handleBlurComplete = async () => {
+    setIsEditingComplete(false);
+    const rawValue = displayValueComplete.replace(/[^\d]/g, '');
+    const numVal = rawValue === "" ? null : Number(rawValue);
+
+    if (issue && numVal !== issue.budget_complete) {
+      try {
+        await issueOperations.update(workspaceSlug, projectId, issueId, { budget_complete: numVal });
+        setDisplayValueComplete(formatMoney(numVal));
+      } catch (err) {
+        console.error("Budget complete save failed", err);
+        setDisplayValueComplete(formatMoney(issue.budget_complete));
+      }
+    } else {
+      setDisplayValueComplete(formatMoney(numVal));
+    }
+  };
+  // ----------------------------------------------------
+
   // --- 4. CONTACT PERSON LOGIKA ---
   const [contactPerson, setContactPerson] = useState(issue?.contact_person ?? "");
   const [isContactEditing, setIsContactEditing] = useState(false);
@@ -502,6 +555,25 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
                   onFocus={handleFocus}
                   onChange={handleChange}
                   onBlur={handleBlur}
+                  onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                  disabled={disabled}
+                />
+              </div>
+          </SidebarPropertyListItem>
+        )}
+
+        {/* --- BUDGET COMPLETE (Vyčerpáno) --- */}
+        {showBudgetComplete && (
+          <SidebarPropertyListItem icon={BudgetPropertyIcon} label="Vyčerpáno">
+              <div className="w-full h-7.5 flex items-center">
+                <input
+                  type="text"
+                  className="w-full bg-transparent text-left text-body-xs-medium text-custom-text-100 placeholder:text-custom-text-400 focus:outline-none rounded px-0 py-0.5"
+                  placeholder="-"
+                  value={displayValueComplete}
+                  onFocus={handleFocusComplete}
+                  onChange={handleChangeComplete}
+                  onBlur={handleBlurComplete}
                   onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
                   disabled={disabled}
                 />
