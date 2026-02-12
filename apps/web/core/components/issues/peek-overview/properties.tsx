@@ -565,7 +565,7 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
 
         {/* --- BUDGET COMPLETE (Vyčerpáno) --- */}
         {showBudgetComplete && (
-          <SidebarPropertyListItem icon={BudgetPropertyIcon} label="Rozpočet celkem">
+          <SidebarPropertyListItem icon={BudgetPropertyIcon} label="Náklady celkem">
               <div className="w-full h-7.5 flex items-center">
                 <input
                   type="text"

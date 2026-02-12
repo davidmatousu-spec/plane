@@ -575,7 +575,7 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
 
             {/* --- BUDGET COMPLETE (Vyčerpáno) --- */}
             {showBudgetComplete && (
-              <SidebarPropertyListItem icon={BudgetPropertyIcon} label="Rozpočet celkem">
+              <SidebarPropertyListItem icon={BudgetPropertyIcon} label="Náklady celkem">
                 <div className="flex items-center w-full h-7.5 group">
                   <input
                     type="text"
