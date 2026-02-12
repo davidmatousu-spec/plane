@@ -44,6 +44,7 @@ def get_default_properties():
         "updated_on": True,
         "contact_person": True,
         "dealer": True,
+        "budget_complete": True,
     }
 
 
@@ -60,6 +61,7 @@ def get_default_filters():
         "target_date": None,
         "subscriber": None,
         "contact_person": None,
+        "budget_complete": None,
     }
 
 
@@ -93,6 +95,7 @@ def get_default_display_properties():
         "updated_on": True,
         "contact_person": True,
         "dealer": True,
+        "budget_complete": True,
     }
 
 
@@ -163,6 +166,7 @@ class Issue(ProjectBaseModel):
     sequence_id = models.IntegerField(default=1, verbose_name="Issue Sequence ID")
     labels = models.ManyToManyField("db.Label", blank=True, related_name="labels", through="IssueLabel")
     budget = models.IntegerField(null=True, blank=True)
+    budget_complete = models.BigIntegerField(null=True, blank=True)
     sort_order = models.FloatField(default=65535)
     completed_at = models.DateTimeField(null=True)
     archived_at = models.DateField(null=True)
@@ -252,6 +256,28 @@ class Issue(ProjectBaseModel):
                         field="dealer",
                         old_value=old_instance.dealer,
                         new_value=self.dealer,
+                        actor_id=self.updated_by_id,
+                        epoch=timezone.now().timestamp()
+                    )
+            except Exception:
+                pass
+        # --- SLEDOVÁNÍ ZMĚN BUDGET_COMPLETE ---
+        if not self._state.adding:
+            try:
+                old_instance = Issue.objects.get(pk=self.pk)
+                if old_instance.budget_complete != self.budget_complete:
+                    from django.apps import apps
+                    from django.utils import timezone
+                    IssueActivity = apps.get_model("db", "IssueActivity")
+                    IssueActivity.objects.create(
+                        issue_id=self.id,
+                        project_id=self.project_id,
+                        workspace_id=self.workspace_id,
+                        comment="updated budget complete to",
+                        verb="updated",
+                        field="budget_complete",
+                        old_value=old_instance.budget_complete,
+                        new_value=self.budget_complete,
                         actor_id=self.updated_by_id,
                         epoch=timezone.now().timestamp()
                     )
@@ -772,6 +798,7 @@ class IssueVersion(ProjectBaseModel):
     properties = models.JSONField(default=dict)  # issue properties
     meta = models.JSONField(default=dict)  # issue meta
     contact_person = models.CharField(max_length=255, null=True, blank=True)
+    budget_complete = models.BigIntegerField(null=True, blank=True)
     last_saved_at = models.DateTimeField(default=timezone.now)
 
     issue = models.ForeignKey("db.Issue", on_delete=models.CASCADE, related_name="versions")
