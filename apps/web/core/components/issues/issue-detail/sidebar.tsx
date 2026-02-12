@@ -97,6 +97,7 @@ const ALLOWED_USERS = [
 // Oprávnění pro Budget Complete (Vyčerpáno) - pouze vybraní uživatelé
 const ALLOWED_BUDGET_COMPLETE_USERS = [
   "adam.bosak@onixia.cz",
+  "david.matousu@gmail.com",  
 ];
 
 const ALLOWED_CONTACT_VIEWERS: string[] = [
