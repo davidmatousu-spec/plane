@@ -94,6 +94,7 @@ const ALLOWED_USERS = [
   "jan.pertl@onixia.cz"
 ];
 
+
 // Oprávnění pro Budget Complete (Vyčerpáno) - pouze vybraní uživatelé
 const ALLOWED_BUDGET_COMPLETE_USERS = [
   "adam.bosak@onixia.cz",

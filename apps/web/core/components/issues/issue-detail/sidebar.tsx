@@ -101,6 +101,7 @@ const ALLOWED_BUDGET_COMPLETE_USERS = [
   "david.matousu@gmail.com",  
 ];
 
+
 const ALLOWED_CONTACT_VIEWERS: string[] = [
     // "tvoje-id", 
 ];
