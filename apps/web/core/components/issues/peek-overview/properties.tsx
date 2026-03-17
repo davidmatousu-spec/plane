@@ -88,7 +88,8 @@ const DealerPropertyIcon = (props: any) => (
 // --- KONFIGURACE OPRÁVNĚNÍ ---
 const ALLOWED_USERS = [
   "d670304d-4017-4dd2-9641-6966fa60352a", // VAŠE ID (Nejbezpečnější)
-  "david.matousu@gmail.com",                   
+  "david.matousu@gmail.com",  
+  "tereza.plechackova@onixia-pasport.cz",                
   "adam.bosak@onixia.cz",
   "jan.pertl@onixia.cz"
 ];
