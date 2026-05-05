@@ -91,7 +91,8 @@ const ALLOWED_USERS = [
   "david.matousu@gmail.com",  
   "tereza.plechackova@onixia-pasport.cz",                
   "adam.bosak@onixia.cz",
-  "jan.pertl@onixia.cz"
+  "jan.pertl@onixia.cz",
+  "josef.sankot@onixia-pasport.cz"
 ];
 
 
