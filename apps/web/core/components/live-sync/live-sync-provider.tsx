@@ -182,25 +182,78 @@ async function fetchIssuesAndFingerprint(ctx: PageContext): Promise<PollResult> 
 }
 
 /**
- * Silently merge issue data directly into the MobX issuesMap.
- *
- * This is the key difference from the previous approach:
- * - OLD: fetchIssuesWithExistingPagination → clear store → loader → re-fetch → re-render (visible flash)
- * - NEW: directly update issuesMap → MobX observers re-render only changed cells (invisible)
- *
- * The `addIssue` method on the IssueStore does exactly this:
- * - If the issue doesn't exist yet, it adds it
- * - If it already exists, it merges the new data into the existing issue
- * - MobX observers automatically pick up property changes
+ * Get the active issue sub-store based on the current page context.
+ * The sub-store contains `groupedIssueIds` and `updateIssueList` which
+ * control kanban column assignments.
  */
-function silentMergeIssues(issues: TIssue[]) {
+function getActiveIssueStore(ctx: PageContext) {
+  const { section } = ctx;
+  const issueRoot = rootStore.issue;
+
+  switch (section) {
+    case "cycles":
+      return issueRoot.cycleIssues;
+    case "modules":
+      return issueRoot.moduleIssues;
+    case "views":
+      return issueRoot.projectViewIssues;
+    case "issues":
+    default:
+      return issueRoot.projectIssues;
+  }
+}
+
+/**
+ * Silently merge issue data into the MobX store AND update kanban grouping.
+ *
+ * This replicates the pattern from BaseIssuesStore.issueUpdate():
+ * 1. Clone the old issue state from issuesMap
+ * 2. Update the issue data in issuesMap
+ * 3. Call updateIssueList(newIssue, oldIssue) to move the issue
+ *    between kanban columns if grouping-relevant fields changed
+ *    (state_id, priority, assignee_ids, label_ids, etc.)
+ *
+ * Result: cards move between kanban columns silently, no loader, no flicker.
+ */
+function silentMergeIssues(issues: TIssue[], ctx: PageContext) {
   if (!issues || issues.length === 0) return;
 
-  log(`Silently merging ${issues.length} issues into MobX store`);
+  const issueStore = rootStore.issue.issues;
+  const activeStore = getActiveIssueStore(ctx);
 
-  // Use the existing addIssue method which does a silent merge
-  // This updates issuesMap without any loader, clear, or visible side effects
-  rootStore.issue.issues.addIssue(issues);
+  let updatedCount = 0;
+
+  for (const newIssue of issues) {
+    if (!newIssue.id) continue;
+
+    // Get the old state of this issue from the store (before updating)
+    const existingIssue = issueStore.getIssueById(newIssue.id);
+
+    if (existingIssue) {
+      // Check if anything actually changed
+      if (existingIssue.updated_at === newIssue.updated_at) continue;
+
+      // Clone the old state before we modify it
+      const oldIssueState = { ...existingIssue };
+
+      // Update the issue data in issuesMap (silent, no loader)
+      issueStore.updateIssue(newIssue.id, newIssue);
+
+      // Now update the issue list/grouping (moves card between kanban columns)
+      // This compares old vs new state and handles group membership changes
+      activeStore.updateIssueList(
+        { ...oldIssueState, ...newIssue } as TIssue,
+        oldIssueState as TIssue
+      );
+
+      updatedCount++;
+    } else {
+      // New issue not in store yet – just add to issuesMap
+      issueStore.addIssue([newIssue]);
+    }
+  }
+
+  log(`Silently merged ${updatedCount} changed issues (${issues.length} checked)`);
 }
 
 // ═══════════════════════════════════════
@@ -307,7 +360,7 @@ export const LiveSyncProvider = observer(function LiveSyncProvider() {
         // Change detected! Silently merge the data we already have
         log("🔄 Change detected! Silently merging", result.issues.length, "issues...");
         lastFingerprintRef.current = result.fingerprint;
-        silentMergeIssues(result.issues);
+        silentMergeIssues(result.issues, ctx);
       } else {
         log("No changes detected");
       }
