@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { observer } from "mobx-react";
 // plane imports
 import { API_BASE_URL } from "@plane/constants";
+import type { TIssue } from "@plane/types";
 // store
 import { rootStore } from "@/lib/store-context";
 
@@ -12,7 +13,7 @@ const LIVE_SYNC_CONFIG = {
   /** Polling interval in milliseconds */
   POLL_INTERVAL_MS: 10_000,
   /** Number of recent issues to check for changes */
-  CHECK_COUNT: 20,
+  CHECK_COUNT: 50,
   /** Pause duration after own mutation (ms) */
   OWN_ACTION_PAUSE_MS: 5_000,
   /** Max consecutive errors before backing off */
@@ -35,6 +36,11 @@ type PageContext = {
   moduleId?: string;
   viewId?: string;
 };
+
+type PollResult = {
+  fingerprint: string;
+  issues: TIssue[];
+} | null;
 
 // ═══════════════════════════════════════
 // UTILITIES
@@ -110,10 +116,11 @@ function getPageContext(): PageContext | null {
 }
 
 /**
- * Fetch a lightweight fingerprint of recent issues from the API.
- * Returns a string hash representing the current state, or null on error.
+ * Fetch recent issues from the API and compute a fingerprint.
+ * Returns BOTH the fingerprint AND the raw issue data, so we can
+ * silently merge the data into the MobX store without a second fetch.
  */
-async function fetchFingerprint(ctx: PageContext): Promise<string | null> {
+async function fetchIssuesAndFingerprint(ctx: PageContext): Promise<PollResult> {
   const url = `${API_BASE_URL}/api/workspaces/${ctx.workspaceSlug}/projects/${ctx.projectId}/issues/?order_by=-updated_at&per_page=${LIVE_SYNC_CONFIG.CHECK_COUNT}&cursor=0:0:0`;
 
   try {
@@ -133,7 +140,7 @@ async function fetchFingerprint(ctx: PageContext): Promise<string | null> {
     const data = await response.json();
 
     // Extract issues from paginated/grouped responses
-    let issues: Array<Record<string, unknown>> = [];
+    let issues: TIssue[] = [];
 
     if (data.results && Array.isArray(data.results)) {
       issues = data.results;
@@ -143,7 +150,7 @@ async function fetchFingerprint(ctx: PageContext): Promise<string | null> {
       // Grouped response (kanban etc.) – flatten all groups
       Object.values(data.results).forEach((group) => {
         if (Array.isArray(group)) {
-          issues.push(...(group as Array<Record<string, unknown>>));
+          issues.push(...(group as TIssue[]));
         }
       });
     }
@@ -151,22 +158,23 @@ async function fetchFingerprint(ctx: PageContext): Promise<string | null> {
     // Build a compact fingerprint from issue metadata
     const fingerprint = issues
       .map((issue) => {
-        const id = (issue.id as string) || "";
-        const updated = (issue.updated_at as string) || "";
-        const state = (issue.state_id as string) || (issue.state as string) || "";
-        const priority = (issue.priority as string) || "";
+        const id = issue.id || "";
+        const updated = issue.updated_at || "";
+        const state = issue.state_id || "";
+        const priority = issue.priority || "";
         const assignees = Array.isArray(issue.assignee_ids)
-          ? (issue.assignee_ids as string[]).join(",")
+          ? issue.assignee_ids.join(",")
           : "";
         const labels = Array.isArray(issue.label_ids)
-          ? (issue.label_ids as string[]).join(",")
+          ? issue.label_ids.join(",")
           : "";
-        return `${id}|${updated}|${state}|${priority}|${assignees}|${labels}`;
+        const name = issue.name || "";
+        return `${id}|${updated}|${state}|${priority}|${assignees}|${labels}|${name}`;
       })
       .sort()
       .join("\n");
 
-    return fingerprint;
+    return { fingerprint, issues };
   } catch (err) {
     log("Fetch error:", err);
     return null;
@@ -174,139 +182,25 @@ async function fetchFingerprint(ctx: PageContext): Promise<string | null> {
 }
 
 /**
- * Find all scrollable containers in the issue layout area and save their scroll positions.
+ * Silently merge issue data directly into the MobX issuesMap.
+ *
+ * This is the key difference from the previous approach:
+ * - OLD: fetchIssuesWithExistingPagination → clear store → loader → re-fetch → re-render (visible flash)
+ * - NEW: directly update issuesMap → MobX observers re-render only changed cells (invisible)
+ *
+ * The `addIssue` method on the IssueStore does exactly this:
+ * - If the issue doesn't exist yet, it adds it
+ * - If it already exists, it merges the new data into the existing issue
+ * - MobX observers automatically pick up property changes
  */
-function saveScrollPositions(): Array<{ element: Element; top: number; left: number }> {
-  const selectors = [
-    // Main issue list/board scroll containers (all layout roots use overflow-auto)
-    "[class*='overflow-auto']",
-    "[class*='overflow-y-auto']",
-    "[class*='overflow-scroll']",
-  ];
+function silentMergeIssues(issues: TIssue[]) {
+  if (!issues || issues.length === 0) return;
 
-  const saved: Array<{ element: Element; top: number; left: number }> = [];
+  log(`Silently merging ${issues.length} issues into MobX store`);
 
-  selectors.forEach((selector) => {
-    document.querySelectorAll(selector).forEach((el) => {
-      // Only save if the element is actually scrolled
-      if (el.scrollTop > 0 || el.scrollLeft > 0) {
-        saved.push({
-          element: el,
-          top: el.scrollTop,
-          left: el.scrollLeft,
-        });
-      }
-    });
-  });
-
-  log("Saved scroll positions for", saved.length, "containers");
-  return saved;
-}
-
-/**
- * Restore scroll positions after React re-renders.
- * Uses a requestAnimationFrame loop to keep restoring for ~800ms,
- * ensuring the positions survive MobX-triggered re-renders.
- */
-function restoreScrollPositions(
-  saved: Array<{ element: Element; top: number; left: number }>
-) {
-  if (saved.length === 0) return;
-
-  const startTime = Date.now();
-  const RESTORE_DURATION_MS = 800;
-
-  const restore = () => {
-    saved.forEach(({ element, top, left }) => {
-      // Only restore if the element is still in the DOM
-      if (element.isConnected) {
-        element.scrollTop = top;
-        element.scrollLeft = left;
-      }
-    });
-
-    // Keep restoring for RESTORE_DURATION_MS to survive async re-renders
-    if (Date.now() - startTime < RESTORE_DURATION_MS) {
-      requestAnimationFrame(restore);
-    } else {
-      log("Scroll position restore complete");
-    }
-  };
-
-  requestAnimationFrame(restore);
-}
-
-/**
- * Trigger a data refresh in the appropriate MobX store based on the current context.
- * This uses the existing `fetchIssuesWithExistingPagination` method which
- * re-fetches issues from the server and updates the MobX store reactively.
- * Scroll positions are preserved across the refresh.
- */
-function triggerStoreRefresh(ctx: PageContext) {
-  const { workspaceSlug, projectId, cycleId, moduleId, viewId, section } = ctx;
-  const issueRoot = rootStore.issue;
-
-  // Save scroll positions BEFORE the refresh
-  const scrollPositions = saveScrollPositions();
-
-  try {
-    switch (section) {
-      case "cycles":
-        if (cycleId) {
-          log("Refreshing cycle issues:", cycleId);
-          // Signature: (workspaceSlug, projectId, loadType, cycleId)
-          issueRoot.cycleIssues.fetchIssuesWithExistingPagination(
-            workspaceSlug,
-            projectId,
-            "mutation",
-            cycleId
-          );
-        }
-        break;
-
-      case "modules":
-        if (moduleId) {
-          log("Refreshing module issues:", moduleId);
-          // Signature: (workspaceSlug, projectId, loadType, moduleId)
-          issueRoot.moduleIssues.fetchIssuesWithExistingPagination(
-            workspaceSlug,
-            projectId,
-            "mutation",
-            moduleId
-          );
-        }
-        break;
-
-      case "views":
-        if (viewId) {
-          log("Refreshing view issues:", viewId);
-          // Signature: (workspaceSlug, projectId, viewId, loadType)
-          issueRoot.projectViewIssues.fetchIssuesWithExistingPagination(
-            workspaceSlug,
-            projectId,
-            viewId,
-            "mutation"
-          );
-        }
-        break;
-
-      case "issues":
-      default:
-        log("Refreshing project issues");
-        // Signature: (workspaceSlug, projectId, loadType)
-        issueRoot.projectIssues.fetchIssuesWithExistingPagination(
-          workspaceSlug,
-          projectId,
-          "mutation"
-        );
-        break;
-    }
-
-    // Restore scroll positions after React re-renders
-    restoreScrollPositions(scrollPositions);
-  } catch (err) {
-    log("Store refresh error:", err);
-  }
+  // Use the existing addIssue method which does a silent merge
+  // This updates issuesMap without any loader, clear, or visible side effects
+  rootStore.issue.issues.addIssue(issues);
 }
 
 // ═══════════════════════════════════════
@@ -315,7 +209,12 @@ function triggerStoreRefresh(ctx: PageContext) {
 
 /**
  * LiveSyncProvider – invisible component that polls for issue changes
- * and triggers MobX store refreshes when remote changes are detected.
+ * and silently merges updates into the MobX store.
+ *
+ * Unlike the previous approach that used fetchIssuesWithExistingPagination
+ * (which caused visible loading/flickering), this directly merges data
+ * into issuesMap. MobX observers automatically re-render only the
+ * specific cells/properties that changed – completely invisible to the user.
  *
  * Place this inside the StoreProvider tree (e.g. in provider.tsx).
  */
@@ -386,9 +285,9 @@ export const LiveSyncProvider = observer(function LiveSyncProvider() {
     isPollingRef.current = true;
 
     try {
-      const fingerprint = await fetchFingerprint(ctx);
+      const result = await fetchIssuesAndFingerprint(ctx);
 
-      if (fingerprint === null) {
+      if (result === null) {
         consecutiveErrorsRef.current++;
         if (consecutiveErrorsRef.current >= LIVE_SYNC_CONFIG.MAX_CONSECUTIVE_ERRORS) {
           log("Too many errors, backing off for", LIVE_SYNC_CONFIG.ERROR_BACKOFF_MS, "ms");
@@ -402,13 +301,13 @@ export const LiveSyncProvider = observer(function LiveSyncProvider() {
 
       if (lastFingerprintRef.current === null) {
         // First poll – save baseline, don't trigger refresh
-        lastFingerprintRef.current = fingerprint;
+        lastFingerprintRef.current = result.fingerprint;
         log("Baseline fingerprint saved");
-      } else if (fingerprint !== lastFingerprintRef.current) {
-        // Change detected! Update fingerprint and refresh MobX store
-        log("🔄 Change detected! Refreshing MobX store...");
-        lastFingerprintRef.current = fingerprint;
-        triggerStoreRefresh(ctx);
+      } else if (result.fingerprint !== lastFingerprintRef.current) {
+        // Change detected! Silently merge the data we already have
+        log("🔄 Change detected! Silently merging", result.issues.length, "issues...");
+        lastFingerprintRef.current = result.fingerprint;
+        silentMergeIssues(result.issues);
       } else {
         log("No changes detected");
       }
