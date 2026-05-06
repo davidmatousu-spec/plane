@@ -29,6 +29,10 @@ const ChatSupportModal = lazy(function ChatSupportModal() {
   return import("@/components/global/chat-support-modal");
 });
 
+const LiveSyncProvider = lazy(function LiveSyncProvider() {
+  return import("@/components/live-sync/live-sync-provider");
+});
+
 export interface IAppProvider {
   children: React.ReactNode;
 }
@@ -48,6 +52,7 @@ export function AppProvider(props: IAppProvider) {
             <InstanceWrapper>
               <Suspense>
                 <ChatSupportModal />
+                <LiveSyncProvider />
                 <SWRConfig value={WEB_SWR_CONFIG}>{children}</SWRConfig>
               </Suspense>
             </InstanceWrapper>
