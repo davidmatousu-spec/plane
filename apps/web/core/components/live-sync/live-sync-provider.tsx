@@ -174,13 +174,80 @@ async function fetchFingerprint(ctx: PageContext): Promise<string | null> {
 }
 
 /**
+ * Find all scrollable containers in the issue layout area and save their scroll positions.
+ */
+function saveScrollPositions(): Array<{ element: Element; top: number; left: number }> {
+  const selectors = [
+    // Main issue list/board scroll containers (all layout roots use overflow-auto)
+    "[class*='overflow-auto']",
+    "[class*='overflow-y-auto']",
+    "[class*='overflow-scroll']",
+  ];
+
+  const saved: Array<{ element: Element; top: number; left: number }> = [];
+
+  selectors.forEach((selector) => {
+    document.querySelectorAll(selector).forEach((el) => {
+      // Only save if the element is actually scrolled
+      if (el.scrollTop > 0 || el.scrollLeft > 0) {
+        saved.push({
+          element: el,
+          top: el.scrollTop,
+          left: el.scrollLeft,
+        });
+      }
+    });
+  });
+
+  log("Saved scroll positions for", saved.length, "containers");
+  return saved;
+}
+
+/**
+ * Restore scroll positions after React re-renders.
+ * Uses a requestAnimationFrame loop to keep restoring for ~800ms,
+ * ensuring the positions survive MobX-triggered re-renders.
+ */
+function restoreScrollPositions(
+  saved: Array<{ element: Element; top: number; left: number }>
+) {
+  if (saved.length === 0) return;
+
+  const startTime = Date.now();
+  const RESTORE_DURATION_MS = 800;
+
+  const restore = () => {
+    saved.forEach(({ element, top, left }) => {
+      // Only restore if the element is still in the DOM
+      if (element.isConnected) {
+        element.scrollTop = top;
+        element.scrollLeft = left;
+      }
+    });
+
+    // Keep restoring for RESTORE_DURATION_MS to survive async re-renders
+    if (Date.now() - startTime < RESTORE_DURATION_MS) {
+      requestAnimationFrame(restore);
+    } else {
+      log("Scroll position restore complete");
+    }
+  };
+
+  requestAnimationFrame(restore);
+}
+
+/**
  * Trigger a data refresh in the appropriate MobX store based on the current context.
  * This uses the existing `fetchIssuesWithExistingPagination` method which
  * re-fetches issues from the server and updates the MobX store reactively.
+ * Scroll positions are preserved across the refresh.
  */
 function triggerStoreRefresh(ctx: PageContext) {
   const { workspaceSlug, projectId, cycleId, moduleId, viewId, section } = ctx;
   const issueRoot = rootStore.issue;
+
+  // Save scroll positions BEFORE the refresh
+  const scrollPositions = saveScrollPositions();
 
   try {
     switch (section) {
@@ -234,6 +301,9 @@ function triggerStoreRefresh(ctx: PageContext) {
         );
         break;
     }
+
+    // Restore scroll positions after React re-renders
+    restoreScrollPositions(scrollPositions);
   } catch (err) {
     log("Store refresh error:", err);
   }
