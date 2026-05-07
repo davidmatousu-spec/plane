@@ -1,0 +1,1919 @@
+{
+  "name": "Plane Automat",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "plane-hook",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -3104,
+        -208
+      ],
+      "id": "ef92247e-d7d8-4799-a176-037aba0c61a8",
+      "name": "Webhook",
+      "webhookId": "07e2fb47-8c63-440f-aafe-6fd54fc9babe"
+    },
+    {
+      "parameters": {
+        "amount": "={{ Math.ceil(Math.random() * 6) + 4 }}"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -1808,
+        -224
+      ],
+      "id": "88ebb22e-a311-4031-a2b5-7e7d2131d1a6",
+      "name": "Wait",
+      "webhookId": "ada80356-21ba-4b7c-bb93-238a9521269b"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1TWYH8dKtf5Ym6gcKBPQqkADQbsftsOtK0m1rcirlFbk",
+          "mode": "list",
+          "cachedResultName": "Plane Sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1TWYH8dKtf5Ym6gcKBPQqkADQbsftsOtK0m1rcirlFbk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "List 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1TWYH8dKtf5Ym6gcKBPQqkADQbsftsOtK0m1rcirlFbk/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_ukolu",
+              "lookupValue": "={{ $('Code in JavaScript').item.json.body.data.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1024,
+        -880
+      ],
+      "id": "580aa3bc-990a-4951-8436-c8e34da9707c",
+      "name": "Get row(s) in sheet",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "mmS2V3OGrIrPjrUM",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "75b8147f-2913-445b-9e9f-ad9d40ca8b2b",
+              "leftValue": "={{ $json.ID_ukolu }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -832,
+        -880
+      ],
+      "id": "7d97dce6-7722-44be-992c-9f93cb973c58",
+      "name": "Našel/Nenašel"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1TWYH8dKtf5Ym6gcKBPQqkADQbsftsOtK0m1rcirlFbk",
+          "mode": "list",
+          "cachedResultName": "Plane Sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1TWYH8dKtf5Ym6gcKBPQqkADQbsftsOtK0m1rcirlFbk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "List 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1TWYH8dKtf5Ym6gcKBPQqkADQbsftsOtK0m1rcirlFbk/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Nazev": "={{ $('Code in JavaScript').item.json.body.data.name }}",
+            "Popis": "={{ $('Extrakce z description').item.json.description_formatted }}",
+            "Latitude": "={{ $('Extrakce z description').item.json.lat }}",
+            "Longitude": "={{ $('Extrakce z description').item.json.lon }}",
+            "ID_ukolu": "={{ $json.ID_ukolu }}",
+            "Stav": "={{ $('Code in JavaScript').item.json.body.data.state.name === 'Nezměněno' ? $('Get row(s) in sheet').item.json.Stav : $('Code in JavaScript').item.json.body.data.state.name }}",
+            "DueDate": "={{ DateTime.fromISO($('Code in JavaScript').item.json.body.data.target_date).toFormat('d. M. yyyy') }}",
+            "URL": "=https://www.google.com/maps?q= {{ $('Extrakce z description').item.json.lat }},{{ $('Extrakce z description').item.json.lon }}",
+            "row_number": "={{ $json.row_number }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "Nazev",
+              "displayName": "Nazev",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Popis",
+              "displayName": "Popis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "URL",
+              "displayName": "URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Latitude",
+              "displayName": "Latitude",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Longitude",
+              "displayName": "Longitude",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_ukolu",
+              "displayName": "ID_ukolu",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Stav",
+              "displayName": "Stav",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "DueDate",
+              "displayName": "DueDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last_Slack_Sent",
+              "displayName": "Last_Slack_Sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -608,
+        -1040
+      ],
+      "id": "37386874-77e4-42ee-8258-5235df672533",
+      "name": "Update row in sheet",
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "mmS2V3OGrIrPjrUM",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1TWYH8dKtf5Ym6gcKBPQqkADQbsftsOtK0m1rcirlFbk",
+          "mode": "list",
+          "cachedResultName": "Plane Sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1TWYH8dKtf5Ym6gcKBPQqkADQbsftsOtK0m1rcirlFbk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "List 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1TWYH8dKtf5Ym6gcKBPQqkADQbsftsOtK0m1rcirlFbk/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Nazev": "={{ $('Code in JavaScript').item.json.body.data.name }}",
+            "Popis": "={{ $('Extrakce z description').item.json.description_formatted }}",
+            "URL": "=https://www.google.com/maps?q= {{ $('Extrakce z description').item.json.lat }},{{ $('Extrakce z description').item.json.lon }}",
+            "Latitude": "={{ $('Extrakce z description').item.json.lat }}",
+            "Longitude": "={{ $('Extrakce z description').item.json.lon }}",
+            "ID_ukolu": "={{ $('Code in JavaScript').item.json.body.data.id }}",
+            "Stav": "={{ $('Code in JavaScript').item.json.body.data.state.name }}",
+            "DueDate": "={{ DateTime.fromISO($('Code in JavaScript').item.json.body.data.target_date).toFormat('d. M. yyyy') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Nazev",
+              "displayName": "Nazev",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Popis",
+              "displayName": "Popis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "URL",
+              "displayName": "URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Latitude",
+              "displayName": "Latitude",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Longitude",
+              "displayName": "Longitude",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_ukolu",
+              "displayName": "ID_ukolu",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Stav",
+              "displayName": "Stav",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "DueDate",
+              "displayName": "DueDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -608,
+        -800
+      ],
+      "id": "2b023205-8949-4b0e-b239-cad49a4b2efb",
+      "name": "Append row in sheet",
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "mmS2V3OGrIrPjrUM",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7acb7cf1-46c7-4685-b291-dccc2d99200a",
+              "leftValue": "={{ $json.has_map }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1232,
+        -864
+      ],
+      "id": "19f05baf-fd9c-44a8-a2a2-a1154edf5f6c",
+      "name": "Kontrola jestli jsou přidané souřadnice"
+    },
+    {
+      "parameters": {
+        "content": "Mapa",
+        "height": 512,
+        "width": 944,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1296,
+        -1104
+      ],
+      "id": "1c0304e0-c6fc-41f4-b19c-1834aa8f2e05",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "url": "https://slack.com/api/users.lookupByEmail",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "email",
+              "value": "={{ $json.email }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1120,
+        -352
+      ],
+      "id": "8ec5e643-761d-48bb-b8f0-78ae77c9f36c",
+      "name": "Vyhledani uzivatele",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "G3lUtRkA6X1MItok",
+          "name": "Header Auth account 2"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "542078bc-5a21-4fec-9338-cb529fb73f1e",
+              "leftValue": "={{ $json.body.action }}",
+              "rightValue": "(created|issue_created|updated|issue_updated)",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            },
+            {
+              "id": "3062937f-d73b-49de-a04a-bb79250f0ef6",
+              "leftValue": "={{ $json.body.activity.field }}",
+              "rightValue": "^(state|state_id|description|assignees|target_date|priority|name)$",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -2656,
+        -208
+      ],
+      "id": "72c2b6bb-099f-485a-8a6b-90338121ad9b",
+      "name": "Filtr"
+    },
+    {
+      "parameters": {
+        "url": "=https://plane.onixia-pasport.cz/api/v1/workspaces/atelier-onixia/projects/{{ $('Code in JavaScript').item.json.body.data.project }}/issues/{{ $('Code in JavaScript').item.json.body.data.id }}/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "expand",
+              "value": "assignees"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        480,
+        -352
+      ],
+      "id": "232431c9-07c9-4811-9d2f-1a461bd0cc40",
+      "name": "Vyhledání přiřazených osob",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ih3BUTTAlUCf1WbM",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Získáme ID toho, kdo akci provedl\nconst actorId = $('Code in JavaScript').item.json.body.activity.actor.id;\n\n// 2. Získáme seznam přiřazených lidí\nconst assignees = $input.item.json.assignees || [];\n\n// 3. FILTR & DEDUPLIKACE\n// Použijeme \"Set\" pro sledování už unikátních ID, abychom neposlali zprávu 2x stejnému člověku\nconst uniqueRecipients = [];\nconst seenIds = new Set();\n\nfor (const user of assignees) {\n  // Podmínka: Uživatel NENÍ autor A ZÁROVEŇ jsme ho ještě nepřidali do seznamu\n  if (user.id !== actorId && !seenIds.has(user.id)) {\n    seenIds.add(user.id);\n    uniqueRecipients.push(user);\n  }\n}\n\n// 4. Pokud nikdo nezbyl, zastavíme to\nif (uniqueRecipients.length === 0) {\n  return [];\n}\n\n// 5. Vrátíme čistý seznam\nreturn uniqueRecipients.map(user => ({ json: user }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        -352
+      ],
+      "id": "3b3d97d4-e395-43a9-ac59-5fc0e7d6078f",
+      "name": "Zjištění ID lidí"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": \"{{ $('Vyhledani uzivatele').item.json.user.id }}\",\n  \"text\": \"Změna v pasportu {{ $('Code in JavaScript').first().json.body.data.name }} pro <@{{ $('Vyhledani uzivatele').item.json.user.id }}>\",\n  \"blocks\": [\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"Proběhla úprava pasportu:\\n*<https://plane.onixia-pasport.cz/atelier-onixia/projects/{{ $('Code in JavaScript').first().json.body.data.project }}/issues/{{ $('Code in JavaScript').first().json.body.data.id }}|{{ $('Code in JavaScript').first().json.body.data.name ? $('Code in JavaScript').first().json.body.data.name.replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>') : 'Úkol' }}>*\"\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*Projekt:* Pasporty\\n*Stav:* {{ $('Code in JavaScript').first().json.body.data.state.name }}\\n*Přiřazená osoba:* <@{{ $('Vyhledani uzivatele').item.json.user.id }}>\\n*Datum odevzdání:* {{ $('Code in JavaScript').first().json.body.data.target_date ? DateTime.fromISO($('Code in JavaScript').first().json.body.data.target_date).toFormat('d. M. yyyy') : 'Není určeno' }}\"\n      }\n    },\n    {\n      \"type\": \"context\",\n      \"elements\": [\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"Upravil: {{ $('Code in JavaScript').first().json.body.activity && $('Code in JavaScript').first().json.body.activity.actor ? $('Code in JavaScript').first().json.body.activity.actor.display_name : 'Neznámý' }}\"\n        }\n      ]\n    },\n    {\n      \"type\": \"actions\",\n      \"elements\": [\n        {\n          \"type\": \"button\",\n          \"text\": {\n            \"type\": \"plain_text\",\n            \"text\": \"Otevřít v Plane\",\n            \"emoji\": true\n          },\n          \"url\": \"https://plane.onixia-pasport.cz/atelier-onixia/projects/{{ $('Code in JavaScript').first().json.body.data.project }}/issues/{{ $('Code in JavaScript').first().json.body.data.id }}\"\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2592,
+        -448
+      ],
+      "id": "cbb1cddc-8e9b-4bcd-9d2d-a5af81a31198",
+      "name": "Poslání SLACK notifikace",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "G3lUtRkA6X1MItok",
+          "name": "Header Auth account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "SLACK Notifikace",
+        "height": 480,
+        "width": 4048
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1264,
+        -560
+      ],
+      "id": "dd954bfd-2d26-4164-beff-f55897bb8824",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// 1. Definice mapy (Slovníku)\n// Vlevo je email v Plane, vpravo ten, co chcete pro Slack\nconst emailMap = new Map([\n  [\"adam.bosak@onixia.cz\", \"a.bosak91@seznam.cz\"],\n  [\"jan.pertl@onixia.cz\", \"pertl.jan@seznam.cz\"],\n  [\"tereza.plechackova@onixia-pasport.cz\", \"T.Plech@seznam.cz\"],\n  [\"josef.sankot@onixia-pasport.cz\", \"josef-sankot@email.cz\"]\n]);\n\n// 2. Získání emailu\nconst currentEmail = $input.item.json.email;\nlet finalEmail = currentEmail;\n\n// 3. Kontrola: Pokud mapa obsahuje tento email, vytáhneme ho\nif (emailMap.has(currentEmail)) {\n  finalEmail = emailMap.get(currentEmail);\n}\n\n// 4. Vrácení výsledku\nreturn {\n  json: {\n    ...$input.item.json,\n    email: finalEmail\n  }\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        -352
+      ],
+      "id": "bc7cdfd4-9c58-4f6b-89ca-85260cee38fa",
+      "name": "Preklad mailu u lidi co mají rozdilny mail Plane/Slack"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "e853630b6f722be51e47175b1074214e67fdae3c517335b903ddb9f8f5ce40f3@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "PASPORTY"
+        },
+        "options": {
+          "query": "={{ $('Code in JavaScript').item.json.body.data.id }}"
+        }
+      },
+      "name": "Hledat v Kalendari",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1,
+      "position": [
+        -1024,
+        128
+      ],
+      "id": "45c17fb5-0dcc-4e72-908f-1c0d6a102bea",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "jUf0raosnTc56mBq",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.id }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "name": "Existuje uz?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        128
+      ],
+      "id": "f467d562-b2f5-4045-95e1-8eb903ed5f79"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "e853630b6f722be51e47175b1074214e67fdae3c517335b903ddb9f8f5ce40f3@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "PASPORTY"
+        },
+        "start": "={{ $('Code in JavaScript').item.json.body.data.target_date }}",
+        "end": "={{ $('Code in JavaScript').item.json.body.data.target_date }}",
+        "additionalFields": {
+          "description": "={{ $('Extrakce z description').item.json.description_short }}\nID: {{ $('Code in JavaScript').item.json.body.data.id }}",
+          "summary": "={{ $('Code in JavaScript').item.json.body.data.name }}"
+        }
+      },
+      "name": "Vytvorit udalost",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1,
+      "position": [
+        -592,
+        256
+      ],
+      "id": "4809e462-d830-4a75-8f2b-7f4ffc256208",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "jUf0raosnTc56mBq",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "calendar": {
+          "__rl": true,
+          "value": "e853630b6f722be51e47175b1074214e67fdae3c517335b903ddb9f8f5ce40f3@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "PASPORTY"
+        },
+        "eventId": "={{ $json.id }}",
+        "updateFields": {
+          "description": "={{ $('Extrakce z description').item.json.description_short }}\nID: {{ $('Code in JavaScript').item.json.body.data.id }}",
+          "end": "={{ $('Code in JavaScript').item.json.body.data.target_date }}",
+          "start": "={{ $('Code in JavaScript').item.json.body.data.target_date }}",
+          "summary": "={{ $('Code in JavaScript').item.json.body.data.name }}"
+        }
+      },
+      "name": "Aktualizovat udalost",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1,
+      "position": [
+        -592,
+        32
+      ],
+      "id": "e588c7fe-6b87-4149-8a3f-a4d8cc87330e",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "jUf0raosnTc56mBq",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f80b9136-b0bb-4d4f-9d9d-fe0471890e76",
+              "leftValue": "={{ $('Code in JavaScript').item.json.body.data.target_date }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1232,
+        144
+      ],
+      "id": "904cbe15-be20-41b6-9177-94fd8fc67e2e",
+      "name": "Má pasport datum?"
+    },
+    {
+      "parameters": {
+        "content": "Sdílený kalendář",
+        "height": 432,
+        "width": 944,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1280,
+        -32
+      ],
+      "id": "997c008b-9051-4d68-9317-262791da39e8",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Načteme data z webhooku\nconst data = $input.item.json.body.data;\n\n// 1. ZÍSKÁNÍ VSTUPU\nlet rawInput = \"\";\nif (data.description_html && typeof data.description_html === 'string') {\n  rawInput = data.description_html;\n} else if (data.description && typeof data.description === 'string') {\n  rawInput = data.description;\n} else {\n  rawInput = data.description_stripped || \"\";\n}\n\n// 2. FUNKCE: PŘEVOD HTML NA ČISTÝ TEXT (Pro Google Sheets)\nfunction htmlToText(html) {\n  if (!html) return \"\";\n  let text = String(html)\n    .replace(/<\\/td>/gi, '   ')      \n    .replace(/<\\/tr>/gi, '\\n')       \n    .replace(/<\\/p>/gi, '\\n')        \n    .replace(/<\\/div>/gi, '\\n')\n    .replace(/<br\\s*\\/?>/gi, '\\n')\n    .replace(/<\\/h[1-6]>/gi, '\\n\\n')\n    .replace(/<li[^>]*>/gi, '• ')\n    .replace(/<\\/li>/gi, '\\n')\n    .replace(/<[^>]+>/g, '')         \n    .replace(/&nbsp;/g, ' ');\n\n  return text.replace(/\\n\\s*\\n\\s*\\n/g, '\\n\\n').trim();\n}\n\n// Plný text pro Excel (zachová vše, jen odstraní HTML)\nconst fullText = htmlToText(rawInput);\n\n\n// 3. FUNKCE: FILTROVÁNÍ PRO KALENDÁŘ (Zkrácená verze)\nfunction filterImportantInfo(text) {\n  if (!text) return \"\";\n  let result = \"\";\n  \n  // Kontakt\n  const startKontakt = text.indexOf(\"Kontaktní osoba\");\n  const startInfo = text.indexOf(\"Info z Peakforce\");\n  if (startKontakt !== -1) {\n    const endKontakt = (startInfo !== -1) ? startInfo : text.length;\n    result += text.substring(startKontakt, endKontakt).trim() + \"\\n\\n\"; \n  }\n\n  // Skenování\n  const startSken = text.indexOf(\"Skenování\");\n  const startPost = text.indexOf(\"Postprodukce\");\n  if (startSken !== -1) {\n    const endSken = (startPost !== -1) ? startPost : text.length;\n    let sekce = text.substring(startSken, endSken).trim();\n    let lines = sekce.split('\\n');\n    let filteredLines = [];\n    filteredLines.push(lines[0]); // Nadpis\n    for (let i = 1; i < lines.length; i++) {\n        if (lines[i].toLowerCase().includes(\"datum a čas\")) {\n            filteredLines.push(lines[i]);\n        }\n    }\n    if (filteredLines.length > 1) result += filteredLines.join('\\n');\n    else result += sekce;\n  }\n  \n  if (result.trim() === \"\") return text;\n  return result.trim();\n}\n\nconst descriptionShort = filterImportantInfo(fullText);\n\n// 4. SOUŘADNICE\nconst regex = /(-?[0-9]+\\.[0-9]+),\\s*(-?[0-9]+\\.[0-9]+)/;\nconst match = (data.description_stripped || \"\").match(regex);\n\nreturn {\n  json: {\n    ...$input.item.json, \n    lat: match ? match[1] : null,\n    lon: match ? match[2] : null,\n    has_map: match ? true : false,\n    \n    // Výstupy\n    description_formatted: fullText,      // Hezký text do Tabulky\n    description_short: descriptionShort   // Stručný text do Kalendáře/Mapy\n  }\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1600,
+        -224
+      ],
+      "id": "b71a56ac-fc20-4edf-b99e-f1a058b3b236",
+      "name": "Extrakce z description"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ========= NASTAVENÍ =========\nconst assignmentMap = {\n  \"Naplánovat schůzku\": \"e9343d3e-aadf-4f10-a805-fce1dd23a54c, f14a69ef-e86b-43ed-9a7b-4bc422de841d\",\n  \"Schůzka proběhla - poslat CN\": \"e9343d3e-aadf-4f10-a805-fce1dd23a54c\",\n  \"Skenování\": \"7cb06029-c1ef-45b7-bc0c-de178693c208\",\n  \"Skládání a spojování\": \"7cb06029-c1ef-45b7-bc0c-de178693c208\",\n  \"Zkreslení dokumentace\": \"91e8b742-b104-4b0b-b4b5-6a5ad96a5e05\",\n  \"K odevzdání klientovi / Fakturaci\": \"e9343d3e-aadf-4f10-a805-fce1dd23a54c\"\n};\n// =============================\n\nconst data = $input.item.json.body.data;\nconst currentState = data.state.name;\n\nif (assignmentMap.hasOwnProperty(currentState)) {\n  \n  // 1. ZÍSKÁNÍ NOVÝCH LIDÍ (Podle stavu)\n  const rawValue = assignmentMap[currentState];\n  const newIDs = rawValue.split(',').map(id => id.trim());\n\n  // 2. ZÍSKÁNÍ STÁVAJÍCÍCH LIDÍ (Robustní verze)\n  // Zkoušíme najít IDčka na různých místech, kde je Plane může schovávat\n  let currentIDs = [];\n\n  if (Array.isArray(data.assignee_ids)) {\n      // Varianta A: Plane poslal čistá ID\n      currentIDs = data.assignee_ids;\n  } else if (Array.isArray(data.assignees)) {\n      // Varianta B: Plane poslal objekty (jména, fotky...), musíme z toho vytáhnout jen ID\n      currentIDs = data.assignees.map(person => {\n          return (typeof person === 'object' && person.id) ? person.id : person;\n      });\n  }\n\n  // 3. SLOUČENÍ (Merge)\n  const combinedIDs = [...currentIDs, ...newIDs];\n  \n  // Odstranění duplicit\n  const uniqueList = [...new Set(combinedIDs)];\n\n  return {\n    json: {\n      ...$input.item.json,\n      new_assignee_id: uniqueList,\n      should_update: true\n    }\n  };\n} else {\n  return {\n    json: {\n      ...$input.item.json,\n      should_update: false\n    }\n  };\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1424,
+        512
+      ],
+      "id": "4ddf111d-d77d-4e3f-8f53-8e6b10322022",
+      "name": "Rozcestník přiřazení"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "415b4983-19ce-46e6-b7b2-5dd8b30b1cc8",
+              "leftValue": "={{ $json.should_update }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1216,
+        512
+      ],
+      "id": "56828b6a-0be5-4b2a-9b84-fc0612defd0c",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://plane.onixia-pasport.cz//api/v1/workspaces/atelier-onixia/projects/{{ $('Code in JavaScript').item.json.body.data.project }}/issues/{{ $('Code in JavaScript').item.json.body.data.id }}/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"assignees\": {{ JSON.stringify($json.new_assignee_id) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -960,
+        496
+      ],
+      "id": "677a4855-69e8-434e-bfa1-c75cc1cc4834",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ih3BUTTAlUCf1WbM",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "Automatické přiřazování osoby k úkolu",
+        "height": 288,
+        "width": 944,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1472,
+        432
+      ],
+      "id": "030c2161-0d91-4c30-8285-e73e0a406267",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "amount": 20
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -1232,
+        -224
+      ],
+      "id": "85ce91fc-604b-456f-86b5-0aa0cc02c05a",
+      "name": "Wait1",
+      "webhookId": "213a4ceb-6edf-4944-8243-756b9bec377e"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Mapování ID stavů na jejich Názvy\nconst stateMap = {\n  \"2352ad75-7638-4364-81e7-3ac8a978ae33\": \"Schůzka proběhla - poslat CN\",\n  \"d9eb1998-12b9-4c57-98f0-9053c0a8823d\": \"Zrušeno\",\n  \"a1cb9cc0-825d-43b9-a10f-6d00e3d99156\": \"Vytvořit schůzku\",\n  \"dad2e6f5-b80b-4c3b-8b33-5f43bc5fa6cc\": \"Naplánovat schůzku\",\n  \"4e0247da-57a3-4d1a-844b-59706dd3f350\": \"Čekáme na potvrzení nabídky\",\n  \"841888a0-d6cb-464b-960d-7234cef834aa\": \"Skenování\",\n  \"5e753dc7-979c-4ae4-b887-6004f2eb6ac9\": \"Skládání a spojování\",\n  \"4e530990-0b03-4099-bddd-707dda37c979\": \"Zkreslení dokumentace\",\n  \"fe9a5ad4-9ac3-4b2f-a003-beedfb70e358\": \"K odevzdání klientovi / Fakturaci\",\n  \"a8c61360-dcca-40fe-bc66-144e3dd557b9\": \"Odevzdáno, čekáme na zaplacení\",\n  \"847b527e-7b1b-4f9a-a155-a2dcf70d86df\": \"Zaplaceno / Hotovo\",\n  \"f8a976f5-2152-43f5-b36a-cc61bc9d71c6\": \"Schůzka naplánována\",\n  \"7adb5405-023d-4979-8e54-4bb3903fe0c8\": \"Vytvořit zakázku\",\n  \"cce5cf52-5ed5-4bb3-814b-d97631d53b7a\": \"K odevzdání klientovi / Fakturaci\",\n  \"aed8422c-1e2a-4da5-8a34-40929893b070\": \"Odevzdáno, čekáme na zaplacení\",\n  \"7fcf0909-5700-4920-9dbf-6f1119ea7c00\": \"Připravované projekty\",\n  \"4cb9308b-42d3-42da-b3d3-1f88ec59e714\": \"Ke schválení\",\n  \"94f3038d-6a3b-4903-839b-e1871275b26f\": \"Schválené\",\n  \"cb5dcefe-8b2d-4414-80ab-b10f2fe0c730\": \"Zaplaceno / Hotovo\",\n  \"bdfc1d41-a8a7-47a6-a2b7-c22820904ce2\": \"Cancelled\",\n  \"fb0f2396-a899-40bc-ba74-78803fb646e4\": \"Čekáme na potvrzení nabídky\",\n  \"49759139-f6d3-4de7-a1d1-1e10d4e8c156\": \"Rozpracované\",\n  \"c0609885-d9cd-4ebc-b5b1-4853391f0243\": \"Vytvořit zakázku\",\n  \"b743a5fb-e8be-4553-8685-d1f6901b6098\": \"Proběhla schůzka s ONIXIA - poslat CN\",\n  \"ca18e953-58bf-407a-b377-7ded48b25338\": \"Schůzka s architektem\",\n  \"3946d486-ca67-47cc-a173-2a6173126ec6\": \"Zrušeno\",\n  \"e1963938-2447-479c-a696-0108046d91f9\": \"Připravované zakázky\",\n  \"4133cdd3-de11-4cd6-88b5-d7022463d9d5\": \"Čekáme na potvrzení CN\",\n  \"ea8da1ff-9418-4b56-a35e-cc53dfcf6f07\": \"Tvorba dokumentace (FACHA)\",\n  \"588ee4c6-82e4-4fbc-a438-4dd006c2398c\": \"K odevzdání klientovi / Fakturaci\",\n  \"cbdeb857-61c4-42dd-a97d-a9f1cfab4e7c\": \"Odevzdáno, čekáme na zaplacení\",\n  \"f796bf87-fd77-4368-bba3-905b2049c4ec\": \"Zaplaceno / Hotovo\",\n  \"a03daf51-0d7c-4949-9477-02a504e2ffb5\": \"Todo\",\n  \"5c724477-9dd6-4b27-9cd8-72ecbf194ce2\": \"In Progress\",\n  \"755cfa16-a8dc-422d-9a4e-4d379033939a\": \"Hotovo\",  \n};\n\n// 1. Získáme data z API (To je ta pravda, kterou hledáme)\n// $input.item.json teď obsahuje výstup z HTTP Requestu (aktuální stav v Plane)\nconst apiData = $input.item.json; \nconst webhookData = $('Webhook').item.json.body;\n\n// ID stavu bereme přímo z API Plane (tam je vždy aktuální)\n// Plane API vrací buď \"state_id\" nebo \"state\" (jako ID)\nlet currentStateId = apiData.state_id || apiData.state;\n\n// 2. Překlad ID na Název\nlet stateName = \"Neznámý stav\";\n\nif (currentStateId && stateMap[currentStateId]) {\n    stateName = stateMap[currentStateId];\n} else {\n    // Pokud ID neznáme, raději vypíšeme ID než \"Nezměněno\", abychom viděli chybu\n    stateName = currentStateId || \"Stav nenalezen\";\n}\n\n// 3. Příprava výstupu\n// Musíme zachovat strukturu, na kterou jsou zvyklé další uzly\n// Vracíme kombinaci původních dat z webhooku + opravený stav\nconst outputData = webhookData.data || {};\n\nif (!outputData.state) { outputData.state = {}; }\noutputData.state.name = stateName;\n\n// Aktualizujeme i target_date, kdyby se změnil a webhook to ještě nevěděl\nif (apiData.target_date) {\n    outputData.target_date = apiData.target_date;\n}\n\nreturn {\n  json: {\n    body: {\n      action: webhookData.action,\n      activity: webhookData.activity,\n      data: outputData\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2224,
+        -224
+      ],
+      "id": "c217a4f4-a764-470b-b0f6-42c4a7f5a0d8",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "url": "=https://plane.onixia-pasport.cz/api/v1/workspaces/atelier-onixia/projects/{{ $('Webhook').item.json.body.data.project }}/issues/{{ $('Webhook').item.json.body.data.id }}/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -2448,
+        -224
+      ],
+      "id": "719ad96c-127b-412e-af14-9fdba6ddc6b5",
+      "name": "HTTP Request1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ih3BUTTAlUCf1WbM",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Vygeneruj unikátní timestamp pro toto spuštění\nconst ts = new Date().toISOString();\n\nreturn {\n  json: {\n    ...$input.item.json,\n    my_slack_ts: ts\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1312,
+        -352
+      ],
+      "id": "22dcaf72-3b87-4cac-b3de-422f2d615015",
+      "name": "Vygeneruj timestamp1"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1TWYH8dKtf5Ym6gcKBPQqkADQbsftsOtK0m1rcirlFbk",
+          "mode": "list",
+          "cachedResultName": "Plane Sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1TWYH8dKtf5Ym6gcKBPQqkADQbsftsOtK0m1rcirlFbk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "List 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1TWYH8dKtf5Ym6gcKBPQqkADQbsftsOtK0m1rcirlFbk/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID_ukolu": "={{ $('Code in JavaScript').first().json.body.data.id }}",
+            "Last_Slack_Sent": "={{ $json.my_slack_ts }}"
+          },
+          "matchingColumns": [
+            "ID_ukolu"
+          ],
+          "schema": [
+            {
+              "id": "ID_ukolu",
+              "displayName": "ID_ukolu",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last_Slack_Sent",
+              "displayName": "Last_Slack_Sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1536,
+        -352
+      ],
+      "id": "ea827eab-abd7-4e0b-9843-d4f79a5da704",
+      "name": "Zapiš svůj timestamp1",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "mmS2V3OGrIrPjrUM",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1760,
+        -352
+      ],
+      "id": "796c2965-1fe7-4993-8766-5776742fa80f",
+      "name": "Počkej 5 sekund1",
+      "webhookId": "db-wait-webhook-unique-003"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1TWYH8dKtf5Ym6gcKBPQqkADQbsftsOtK0m1rcirlFbk",
+          "mode": "list",
+          "cachedResultName": "Plane Sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1TWYH8dKtf5Ym6gcKBPQqkADQbsftsOtK0m1rcirlFbk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "List 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1TWYH8dKtf5Ym6gcKBPQqkADQbsftsOtK0m1rcirlFbk/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_ukolu",
+              "lookupValue": "={{ $('Code in JavaScript').first().json.body.data.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1984,
+        -352
+      ],
+      "id": "b1905623-b1db-4344-84f5-78fe056d8b6e",
+      "name": "Přečti zpět z Sheets1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "mmS2V3OGrIrPjrUM",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Porovnej: je v Sheets stále náš timestamp?\n// Pokud ano → jsme poslední, smíme poslat Slack\n// Pokud ne → někdo zapsal po nás, přeskočíme\n\nconst myTs = $('Vygeneruj timestamp1').first().json.my_slack_ts;\nconst sheetsTs = $input.item.json.Last_Slack_Sent;\n\nconst isLatest = (myTs === sheetsTs);\n\nreturn {\n  json: {\n    ...$input.item.json,\n    is_latest_sender: isLatest\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2192,
+        -352
+      ],
+      "id": "8eedae28-de02-419c-81d1-e7449f6df743",
+      "name": "Jsi poslední?1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "db-if-cond-001",
+              "leftValue": "={{ $json.is_latest_sender }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2416,
+        -352
+      ],
+      "id": "8f4c9c01-9758-4fca-8ab4-6e13ea5b8835",
+      "name": "Poslat Slack?1"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1TWYH8dKtf5Ym6gcKBPQqkADQbsftsOtK0m1rcirlFbk",
+          "mode": "list",
+          "cachedResultName": "Plane Sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1TWYH8dKtf5Ym6gcKBPQqkADQbsftsOtK0m1rcirlFbk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "List 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1TWYH8dKtf5Ym6gcKBPQqkADQbsftsOtK0m1rcirlFbk/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID_ukolu": "={{ $('Code in JavaScript').item.json.body.data.id }}",
+            "Last_Slack_Sent": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [
+            "ID_ukolu"
+          ],
+          "schema": [
+            {
+              "id": "Nazev",
+              "displayName": "Nazev",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Popis",
+              "displayName": "Popis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "URL",
+              "displayName": "URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Latitude",
+              "displayName": "Latitude",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Longitude",
+              "displayName": "Longitude",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "ID_ukolu",
+              "displayName": "ID_ukolu",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Stav",
+              "displayName": "Stav",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "DueDate",
+              "displayName": "DueDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Last_Slack_Sent",
+              "displayName": "Last_Slack_Sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        256,
+        -400
+      ],
+      "id": "b9f458ce-9e95-48bf-88b6-fd723f42a371",
+      "name": "Přidání data do tabulky1",
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "mmS2V3OGrIrPjrUM",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "execution",
+        "limit": 50,
+        "filters": {
+          "workflowId": {
+            "__rl": true,
+            "value": "={{ $workflow.id }}",
+            "mode": "id"
+          }
+        },
+        "options": {},
+        "requestOptions": {}
+      },
+      "id": "02fb7a53-72f2-46d9-9a57-9522f885ece8",
+      "name": "Check Running Executions1",
+      "type": "n8n-nodes-base.n8n",
+      "typeVersion": 1,
+      "position": [
+        -1024,
+        -496
+      ],
+      "credentials": {
+        "n8nApi": {
+          "id": "f46i1tNsWEU2qkhj",
+          "name": "n8n account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 5,
+        "unit": "seconds"
+      },
+      "id": "8fc7b0ed-1159-4040-bc28-768d6cab2353",
+      "name": "Počkej 5s1",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        -304
+      ],
+      "webhookId": "0243e179-a1ee-4772-8bc9-4df111ff8d78"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Získáme ID aktuálního běhu (to jsem já)\nconst myId = $execution.id;\n\n// 2. Získáme seznam VŠECH exekucí\nconst allExecutions = $('Check Running Executions1').all().map(item => item.json);\n\n// 3. FILTRUJEME jen ty SKUTEČNĚ živé\n// Oprava: Musíme vyloučit stavy 'error', 'canceled', 'crashed', i když mají finished: false\nlet activeExecutions = allExecutions.filter(exe => \n  exe.mode !== 'manual' &&              // Ignorovat manuální testy\n  exe.finished === false &&             // Musí být nedokončené\n  exe.status !== 'error' &&             // NESMÍ být chyba\n  exe.status !== 'canceled' &&          // NESMÍ být zrušeno\n  exe.status !== 'crashed'              // NESMÍ být spadlé\n);\n\n// POJISTKA: Pokud jsi v seznamu nebyl nalezen (třeba jsi manual), přidáme tě.\nconst amIInList = activeExecutions.find(e => e.id === myId);\nif (!amIInList && $execution.mode !== 'manual') {\n    activeExecutions.push({ id: myId });\n}\n\n// 4. Seřadíme je podle ID (od nejmenšího = nejstaršího)\nactiveExecutions.sort((a, b) => parseInt(a.id) - parseInt(b.id));\n\n// 5. Pokud seznam prázdný, pusť dál\nif (activeExecutions.length === 0) {\n     return { json: { proceed: true } };\n}\n\n// 6. Kdo je první na řadě?\nconst oldestId = activeExecutions[0].id;\n\n// 7. Rozhodnutí\nif (String(myId) === String(oldestId)) {\n  return { json: { proceed: true } }; // Jdi\n} else {\n  return { json: { proceed: false } }; // Čekej\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        -496
+      ],
+      "id": "f767b325-3083-41eb-8b57-6b87addb3327",
+      "name": "Jsem na řadě?1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0541f038-6d87-499f-a847-d1a2b089f71a",
+              "leftValue": "={{ $json.proceed }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -576,
+        -496
+      ],
+      "id": "575c7a74-e5b7-4509-b41d-de6677a6b088",
+      "name": "If3"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ========= NASTAVENÍ =========\nconst BLOCK_MINUTES = 3; // Jak dlouho (v minutách) neposílat další zprávu\n// =============================\n\n// Získání ID úkolu\n// Ujisti se, že název uzlu 'Code in JavaScript' přesně sedí\nconst taskId = $('Code in JavaScript').first().json.body.data.id;\n\n// Přístup k trvalé paměti workflow (funguje jen v produkci/active módu!)\n// OPRAVA: Přidán znak $ před název funkce\nconst staticData = $getWorkflowStaticData('global');\n\n// Načteme historii, nebo vytvoříme novou\nif (!staticData.lastSent) {\n    staticData.lastSent = {};\n}\nconst lastSentMap = staticData.lastSent;\n\nconst now = new Date().getTime();\nconst blockTimeMs = BLOCK_MINUTES * 60 * 1000;\n\nlet shouldSend = true;\n\n// KONTROLA: Pokud už jsme tento úkol nedávno poslali\nif (lastSentMap[taskId]) {\n    const lastTime = new Date(lastSentMap[taskId]).getTime();\n    // A zároveň uběhlo méně času než limit\n    if (now - lastTime < blockTimeMs) {\n        shouldSend = false;\n    }\n}\n\n// ZÁPIS: Pokud se rozhodneme poslat, uložíme si čas\nif (shouldSend) {\n    lastSentMap[taskId] = new Date().toISOString();\n}\n\n// ČIŠTĚNÍ PAMĚTI (Aby se nezahltila starými úkoly)\n// Smažeme záznamy starší než 24 hodin\nconst oneDay = 24 * 60 * 60 * 1000;\nfor (const id in lastSentMap) {\n    if (now - new Date(lastSentMap[id]).getTime() > oneDay) {\n        delete lastSentMap[id];\n    }\n}\n\n// Vrátíme výsledek dál\nreturn {\n    json: {\n        ...$input.item.json,\n        shouldSend: shouldSend\n    }\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        -416
+      ],
+      "id": "a2d8475f-a080-4f51-bf98-a64f90879fb9",
+      "name": "Anti-Spam Paměť1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "07ba0652-ea44-40ea-93d2-e918b6e59edb",
+              "leftValue": "={{ $json.shouldSend }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -32,
+        -416
+      ],
+      "id": "3613f040-6d99-4068-bdef-0a1894e8c8e6",
+      "name": "If4"
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.onixia-pasport.cz",
+            "user-agent": "Autopilot",
+            "content-length": "9765",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate",
+            "content-type": "application/json",
+            "x-forwarded-for": "10.0.1.1",
+            "x-forwarded-host": "n8n.onixia-pasport.cz",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "7e3498e9e92d",
+            "x-plane-delivery": "372d7fee-5e38-4645-9b75-0da813ddcc3d",
+            "x-plane-event": "issue",
+            "x-plane-signature": "82d576886fd941346fdff589d45836e72bfb609f52c5ce9a0d3888eb5b7f6d8a",
+            "x-real-ip": "10.0.1.1"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "event": "issue",
+            "action": "created",
+            "webhook_id": "936a723d-cdbd-41fa-a557-23f9cbcd85ed",
+            "workspace_id": "9e453d55-69c2-4016-8cd1-5d046dba9ce9",
+            "data": {
+              "id": "7c3db67a-254e-4c4f-8caf-1df02fdaba96",
+              "budget": null,
+              "contact_person": "Urban Starosta",
+              "dealer": null,
+              "labels": [
+                {
+                  "id": "1e6c38cc-6ab6-4e0c-93e1-eb7335d19919",
+                  "name": "Jihočeský",
+                  "color": "#fcb900"
+                }
+              ],
+              "assignees": [
+                {
+                  "id": "b9301579-8a17-41c2-a7cf-236ba727d299",
+                  "first_name": "Adam Bosák",
+                  "last_name": "",
+                  "email": "adam.bosak@onixia.cz",
+                  "avatar": "",
+                  "avatar_url": null,
+                  "display_name": "adam.bosak"
+                },
+                {
+                  "id": "e87c96a4-0de2-4a31-9aed-14bbe8799cc7",
+                  "first_name": "Jan Pertl",
+                  "last_name": "",
+                  "email": "jan.pertl@onixia.cz",
+                  "avatar": "",
+                  "avatar_url": null,
+                  "display_name": "jan.pertl"
+                }
+              ],
+              "state": {
+                "id": "2352ad75-7638-4364-81e7-3ac8a978ae33",
+                "name": "Schůzka proběhla - poslat CN",
+                "color": "#8ed1fc",
+                "group": "unstarted"
+              },
+              "created_at": "2026-01-30T14:05:05.718215Z",
+              "updated_at": "2026-01-30T14:05:05.828889Z",
+              "deleted_at": null,
+              "point": null,
+              "name": "Plav - Hostinec Na Ostrově",
+              "description": {},
+              "description_html": "<p class=\"editor-paragraph-block\" data-id=\"55f6743e-0fc8-4a31-b19b-e281ad8ec44c\"><strong>klient:</strong> </p><h5 class=\"editor-heading-block\" data-id=\"6e8404cb-c81b-42ce-9b03-ca195d8b869f\"><span data-text-color=\"dark-blue\">Kontaktní osoba</span></h5><p class=\"editor-paragraph-block\" data-id=\"d9045769-e66d-4118-9ab1-61020a600c7c\"> <strong>jméno, příjmení, pozice:</strong> Urban Starosta</p><p class=\"editor-paragraph-block\" data-id=\"45bdcd7f-8fc2-4afd-b4c1-101f55827e3d\"> <strong>telefon:</strong> 387 988 984</p><p class=\"editor-paragraph-block\" data-id=\"d50e318d-b8c0-4aa2-8cf6-4bc676b7b549\"> <strong>e-mail:</strong> <a target=\"_blank\" class=\"text-accent-secondary underline underline-offset-[3px] hover:text-accent-primary transition-colors cursor-pointer text-custom-primary-300 hover:text-custom-primary-500\" href=\"mailto:starosta@plav.cz\" rel=\"noopener noreferrer\">starosta@plav.cz</a></p><h5 class=\"editor-heading-block\" data-id=\"06175c72-ac74-4b7e-86a1-4425394a68aa\"><span data-text-color=\"dark-blue\">Info</span></h5><p class=\"editor-paragraph-block\" data-id=\"fdea80bb-bfa2-40f2-8d68-a4b9907d346d\"><strong>globální poznámka:</strong> schůzka 20.11. 9h ještě volat prosím Kontakt</p><p class=\"editor-paragraph-block\" data-id=\"757a9795-fed3-4025-8028-2bebac4c1fc4\"><strong>možné budovy k pasportizaci:</strong> Hostinec Na Ostrově</p><p class=\"editor-paragraph-block\" data-id=\"6418493e-a8d9-48a0-a03e-c0b37995824c\"><strong>datum a čas schůzky:</strong> 20.11.2025, 09:00</p><div class=\"py-4 border-strong-1\" data-id=\"a8a093e8-2af3-44f2-928e-41f44aa29b4d\" data-type=\"horizontalRule\"><div></div></div><h5 class=\"editor-heading-block\" data-id=\"3fee80d0-9234-4f4f-9ee6-7afc05254d42\"><span data-text-color=\"orange\">Skenování</span></h5><p class=\"editor-paragraph-block\" data-id=\"690141cd-6721-493d-8bd7-6d450be66935\"><strong>datum a čas skenování:</strong> </p><p class=\"editor-paragraph-block\" data-id=\"0154d227-d691-4a29-9298-f12403807a3f\"><strong>souřadnice:</strong> 48.900803071357856, 14.486716286805118</p><p class=\"editor-paragraph-block\" data-id=\"d60bb9b9-131a-41bf-8d0c-63573b3e5b6e\"><strong>odkaz na google maps:</strong> <a target=\"_blank\" class=\"text-accent-secondary underline underline-offset-[3px] hover:text-accent-primary transition-colors cursor-pointer text-custom-primary-300 hover:text-custom-primary-500\" href=\"https://maps.app.goo.gl/qDYKx9diyCukxMLc8\" rel=\"noopener noreferrer\">https://www.google.com/maps/search/?api=1&amp;query=48.9014349,14.4878743</a></p><h5 class=\"editor-heading-block\" data-id=\"62d459c2-9f44-4543-88f0-00b8963d3dbc\"><span data-text-color=\"peach\">Postprodukce</span></h5><p class=\"editor-paragraph-block\" data-id=\"d1e60714-1010-4c6c-8f13-31026519a3fc\"><strong><span>odkaz na mračno:</span></strong><span> </span></p><p class=\"editor-paragraph-block\" data-id=\"b0cbcc4e-44a0-4e2a-b9d4-7a4ddf52fae7\"><strong>datum a čas začátku zkreslování:</strong>  </p><p class=\"editor-paragraph-block\" data-id=\"8a4dc91f-c3ba-4b67-bb6f-605a8a6fe91b\"><strong>datum a čas konce zkreslování:</strong> </p><div class=\"py-4 border-strong-1\" data-id=\"cebc7057-1bfd-40d3-a683-29526bff1122\" data-type=\"horizontalRule\"><div></div></div><h5 class=\"editor-heading-block\" data-id=\"3dbe3e8b-20b6-4d3f-9903-57be7f0e805b\"><span data-text-color=\"light-blue\">Časová náročnost</span></h5><table data-id=\"59aa77b5-b861-46f2-a732-f92253109af8\"><tbody><tr style=\"\"><th colspan=\"1\" rowspan=\"1\" colwidth=\"150\" background=\"none\" hidecontent=\"false\" class=\"\" style=\"\"><p class=\"editor-paragraph-block\" data-id=\"d123ccc3-a100-4cca-958a-5f9809665d6a\">fáze</p></th><th colspan=\"1\" rowspan=\"1\" colwidth=\"150\" background=\"none\" hidecontent=\"false\" class=\"\" style=\"\"><p class=\"editor-paragraph-block\" data-id=\"9b043919-f0c8-4451-8483-ea39bd202247\">počet hodin</p></th></tr><tr style=\"\"><td colspan=\"1\" rowspan=\"1\" colwidth=\"150\" hidecontent=\"false\" class=\"\" style=\"\"><p class=\"editor-paragraph-block\" data-id=\"1c379573-4ab5-474b-96a3-227af4b4a420\">doprava</p></td><td colspan=\"1\" rowspan=\"1\" colwidth=\"150\" hidecontent=\"false\" class=\"\" style=\"\"><p class=\"editor-paragraph-block\" data-id=\"708c8c1a-2167-486f-bd3b-6ecabde26485\"></p></td></tr><tr style=\"\"><td colspan=\"1\" rowspan=\"1\" colwidth=\"150\" hidecontent=\"false\" class=\"\" style=\"\"><p class=\"editor-paragraph-block\" data-id=\"f73679b0-cf11-4e00-b625-62d4f8ce8116\">skenování</p></td><td colspan=\"1\" rowspan=\"1\" colwidth=\"150\" hidecontent=\"false\" class=\"\" style=\"\"><p class=\"editor-paragraph-block\" data-id=\"2d963901-c72b-4bbe-a9ca-8d011ce01002\"></p></td></tr><tr style=\"\"><td colspan=\"1\" rowspan=\"1\" colwidth=\"150\" hidecontent=\"false\" class=\"\" style=\"\"><p class=\"editor-paragraph-block\" data-id=\"698c5450-2251-4da7-a3c6-8cdc5fbba9b4\">postprodukce</p></td><td colspan=\"1\" rowspan=\"1\" colwidth=\"150\" hidecontent=\"false\" class=\"\" style=\"\"><p class=\"editor-paragraph-block\" data-id=\"534f5048-28ef-4b61-95fd-312959262473\"></p></td></tr><tr style=\"\"><td colspan=\"1\" rowspan=\"1\" colwidth=\"150\" hidecontent=\"false\" class=\"\" style=\"\"><p class=\"editor-paragraph-block\" data-id=\"22b51220-c36b-4ddc-8110-19af9126323d\">připomínky</p></td><td colspan=\"1\" rowspan=\"1\" colwidth=\"150\" hidecontent=\"false\" class=\"\" style=\"\"><p class=\"editor-paragraph-block\" data-id=\"d87f5889-c08d-475e-88f3-306d32f83d9d\"></p></td></tr><tr style=\"\"><td colspan=\"1\" rowspan=\"1\" colwidth=\"150\" hidecontent=\"false\" class=\"\" style=\"\"><p class=\"editor-paragraph-block\" data-id=\"d48371a6-cc43-4df6-93e4-5920b70f73e7\"><span>celková č. n.</span></p></td><td colspan=\"1\" rowspan=\"1\" colwidth=\"150\" hidecontent=\"false\" class=\"\" style=\"\"><p class=\"editor-paragraph-block\" data-id=\"0aa2643d-d5c6-49c9-ba0a-f8bc9dea56aa\"></p></td></tr></tbody></table><h5 class=\"editor-heading-block\" data-id=\"ab3dabb5-561f-4425-a173-98edbeb16ae7\"><span data-text-color=\"green\">Odkaz(y) na hotový pasport</span></h5><p class=\"editor-paragraph-block\" data-id=\"35ca2081-5f8d-4277-8f95-e458d8dd84f1\"></p><h5 class=\"editor-heading-block\" data-id=\"9a0f6eaa-cfdd-495b-814b-9d4c3eb45097\">Další poznámky</h5><p class=\"editor-paragraph-block\" data-id=\"0886e208-9094-485b-8bf7-031e68de8479\"> schůzka čtvrtek 29 v 8:00<br></p><p class=\"editor-paragraph-block\" data-id=\"1be813ea-6f1e-4631-8be5-56f8767afbca\">(48.9014349, 14.4878743)</p>",
+              "description_stripped": "klient: Kontaktní osoba jméno, příjmení, pozice: Urban Starosta telefon: 387 988 984 e-mail: starosta@plav.czInfoglobální poznámka: schůzka 20.11. 9h ještě volat prosím Kontaktmožné budovy k pasportizaci: Hostinec Na Ostrovědatum a čas schůzky: 20.11.2025, 09:00Skenovánídatum a čas skenování: souřadnice: 48.900803071357856, 14.486716286805118odkaz na google maps: https://www.google.com/maps/search/?api=1&amp;query=48.9014349,14.4878743Postprodukceodkaz na mračno: datum a čas začátku zkreslování:  datum a čas konce zkreslování: Časová náročnostfázepočet hodindopravaskenovánípostprodukcepřipomínkycelková č. n.Odkaz(y) na hotový pasportDalší poznámky schůzka čtvrtek 29 v 8:00(48.9014349, 14.4878743)",
+              "description_binary": null,
+              "priority": "urgent",
+              "start_date": null,
+              "target_date": "2026-01-29",
+              "sequence_id": 161,
+              "sort_order": 355535,
+              "completed_at": null,
+              "archived_at": null,
+              "is_draft": false,
+              "external_source": null,
+              "external_id": null,
+              "created_by": "b9301579-8a17-41c2-a7cf-236ba727d299",
+              "updated_by": null,
+              "project": "5e551296-ba0b-413a-b80e-edaf59a6b1e8",
+              "workspace": "9e453d55-69c2-4016-8cd1-5d046dba9ce9",
+              "parent": null,
+              "estimate_point": "57b4a825-1570-4b94-ba18-19f076007275",
+              "type": null
+            },
+            "activity": {
+              "field": null,
+              "new_value": null,
+              "old_value": null,
+              "actor": {
+                "id": "b9301579-8a17-41c2-a7cf-236ba727d299",
+                "first_name": "Adam Bosák",
+                "last_name": "",
+                "email": "adam.bosak@onixia.cz",
+                "avatar": "",
+                "avatar_url": null,
+                "display_name": "adam.bosak"
+              },
+              "old_identifier": null,
+              "new_identifier": null
+            }
+          },
+          "webhookUrl": "https://n8n.onixia-pasport.cz/webhook/plane-hook",
+          "executionMode": "production"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Filtr",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Extrakce z description",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Našel/Nenašel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Našel/Nenašel": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kontrola jestli jsou přidané souřadnice": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vyhledani uzivatele": {
+      "main": [
+        [
+          {
+            "node": "Vygeneruj timestamp1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtr": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vyhledání přiřazených osob": {
+      "main": [
+        [
+          {
+            "node": "Zjištění ID lidí",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zjištění ID lidí": {
+      "main": [
+        [
+          {
+            "node": "Preklad mailu u lidi co mají rozdilny mail Plane/Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poslání SLACK notifikace": {
+      "main": [
+        []
+      ]
+    },
+    "Preklad mailu u lidi co mají rozdilny mail Plane/Slack": {
+      "main": [
+        [
+          {
+            "node": "Vyhledani uzivatele",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hledat v Kalendari": {
+      "main": [
+        [
+          {
+            "node": "Existuje uz?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Existuje uz?": {
+      "main": [
+        [
+          {
+            "node": "Aktualizovat udalost",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Vytvorit udalost",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Má pasport datum?": {
+      "main": [
+        [
+          {
+            "node": "Hledat v Kalendari",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrakce z description": {
+      "main": [
+        [
+          {
+            "node": "Kontrola jestli jsou přidané souřadnice",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Má pasport datum?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rozcestník přiřazení": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Check Running Executions1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vygeneruj timestamp1": {
+      "main": [
+        [
+          {
+            "node": "Zapiš svůj timestamp1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zapiš svůj timestamp1": {
+      "main": [
+        [
+          {
+            "node": "Počkej 5 sekund1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Počkej 5 sekund1": {
+      "main": [
+        [
+          {
+            "node": "Přečti zpět z Sheets1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Přečti zpět z Sheets1": {
+      "main": [
+        [
+          {
+            "node": "Jsi poslední?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jsi poslední?1": {
+      "main": [
+        [
+          {
+            "node": "Poslat Slack?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poslat Slack?1": {
+      "main": [
+        [
+          {
+            "node": "Poslání SLACK notifikace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Running Executions1": {
+      "main": [
+        [
+          {
+            "node": "Jsem na řadě?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Počkej 5s1": {
+      "main": [
+        [
+          {
+            "node": "Check Running Executions1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jsem na řadě?1": {
+      "main": [
+        [
+          {
+            "node": "If3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If3": {
+      "main": [
+        [
+          {
+            "node": "Anti-Spam Paměť1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Počkej 5s1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anti-Spam Paměť1": {
+      "main": [
+        [
+          {
+            "node": "If4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If4": {
+      "main": [
+        [
+          {
+            "node": "Přidání data do tabulky1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Přidání data do tabulky1": {
+      "main": [
+        [
+          {
+            "node": "Vyhledání přiřazených osob",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "82bbd91c-adb2-4470-a227-de7c23459a07",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "53ae7d16c0e3b19f5d2560f16405e30d93f4a7cddbcf96bc968474d4881a6db0"
+  },
+  "id": "8prTYgqUj22d1Aty",
+  "tags": []
+}

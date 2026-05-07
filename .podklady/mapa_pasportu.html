@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa Pasportů</title>
+    <style>
+        body, html { height: 100%; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+        #map { height: 100%; width: 100%; }
+
+        /* Styl pro bublinu s informacemi */
+        .info-box { padding: 5px; max-width: 320px; }
+        .info-box h3 { margin: 0 0 5px 0; font-size: 16px; color: #222; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+        .info-box .stav { font-size: 12px; font-weight: bold; color: #555; margin-bottom: 8px; display: block; }
+
+        /* Odkazy v popisu (maily, telefony) */
+        .info-box a { color: #007bff; text-decoration: none; }
+        .info-box a:hover { text-decoration: underline; }
+
+        /* Tlačítko pro mapu */
+        .btn-map { display: inline-block; background-color: #007bff; color: white !important; text-decoration: none !important; padding: 6px 12px; border-radius: 4px; font-size: 12px; margin-top: 10px; }
+        .btn-map:hover { background-color: #0056b3; }
+
+        #toggle-btn {
+            position: absolute; top: 60px; right: 10px; z-index: 1000;
+            background: white; border: none; padding: 10px 15px;
+            border-radius: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            cursor: pointer; font-weight: bold; font-size: 14px; color: #333;
+            display: flex; align-items: center; gap: 8px;
+        }
+        #toggle-btn:hover { background-color: #f8f9fa; }
+
+        #controls-wrapper {
+            position: absolute; top: 110px; right: 10px; z-index: 999;
+            width: 260px; display: none; flex-direction: column; gap: 8px;
+            max-height: 80vh; overflow-y: auto;
+        }
+
+        .control-box { background: white; padding: 12px; border-radius: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+        .control-box h3 { margin-top: 0; font-size: 14px; margin-bottom: 8px; color: #333; border-bottom: 1px solid #eee; padding-bottom: 5px;}
+
+        #search-input { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+
+        #search-suggestions {
+            background: white; border: 1px solid #ccc; border-top: none; max-height: 150px; overflow-y: auto; display: none; margin-top: 2px; border-radius: 0 0 4px 4px;
+        }
+        .suggestion-item { padding: 8px; font-size: 13px; cursor: pointer; border-bottom: 1px solid #eee; }
+        .suggestion-item:last-child { border-bottom: none; }
+        .suggestion-item:hover { background-color: #f0f0f0; }
+
+        .filter-row { display: flex; align-items: center; margin-bottom: 6px; font-size: 13px; cursor: pointer; }
+        .filter-row input { margin-right: 8px; cursor: pointer; transform: scale(1.1); }
+        .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+    </style>
+
+    <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
+</head>
+<body>
+
+<button id="toggle-btn" onclick="toggleFilters()">☰ Filtry / Hledání</button>
+
+<div id="controls-wrapper">
+    <div class="control-box" style="padding-bottom: 5px;">
+        <input type="text" id="search-input" placeholder="🔍 Hledat název..." onkeyup="handleSearch()" autocomplete="off">
+        <div id="search-suggestions"></div>
+    </div>
+
+    <div class="control-box" id="date-filter-control">
+        <h3>Filtr termínů</h3>
+        <label class="filter-row"><input type="checkbox" checked onchange="handleSearch()" value="date_overdue">🔴 Po termínu / Dnes</label>
+        <label class="filter-row"><input type="checkbox" checked onchange="handleSearch()" value="date_soon">🟠 Následujících 7 dní</label>
+        <label class="filter-row"><input type="checkbox" checked onchange="handleSearch()" value="date_future">⚫ Později / Bez data</label>
+    </div>
+
+    <div class="control-box" id="status-filter-control">
+        <h3>Filtr stavů</h3>
+        <label class="filter-row"><input type="checkbox" checked onchange="handleSearch()" value="cat_backlog"><span class="dot" style="background:#868e96"></span> Naplánovat</label>
+        <label class="filter-row"><input type="checkbox" checked onchange="handleSearch()" value="cat_planned"><span class="dot" style="background:#9b59b6"></span> Schůzka naplánována</label>
+        <label class="filter-row"><input type="checkbox" checked onchange="handleSearch()" value="cat_unstarted"><span class="dot" style="background:#339af0"></span> Schůzky / Nabídky</label>
+        <label class="filter-row"><input type="checkbox" checked onchange="handleSearch()" value="cat_scanning"><span class="dot" style="background:#fab005"></span> Skenování</label>
+        <label class="filter-row"><input type="checkbox" checked onchange="handleSearch()" value="cat_processing"><span class="dot" style="background:#fd7e14"></span> Skládání / Zkreslení</label>
+        <label class="filter-row"><input type="checkbox" checked onchange="handleSearch()" value="cat_completed"><span class="dot" style="background:#40c057"></span> Hotovo</label>
+        <label class="filter-row"><input type="checkbox" checked onchange="handleSearch()" value="cat_cancelled"><span class="dot" style="background:#fa5252"></span> Zrušeno</label>
+    </div>
+</div>
+
+<div id="map"></div>
+
+<script>
+    // === ORIGINAL CODE PRESERVED FOR REFERENCE ===
+</script>
+
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBE4OpCZeT5Z4mueVcPn1DjmusEUCy4qxE&callback=initMap"></script>
+</body>
+</html>

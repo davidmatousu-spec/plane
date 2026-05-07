@@ -65,6 +65,7 @@ class IssueFlatSerializer(BaseSerializer):
             "budget_complete",
             "contact_person",
             "dealer",
+            "dealer_paid",
         ]
 
 
@@ -803,6 +804,7 @@ class IssueSerializer(DynamicBaseSerializer):
             "budget_complete",
             "contact_person",
             "dealer",
+            "dealer_paid",
         ]
         read_only_fields = fields
 
@@ -865,6 +867,7 @@ class IssueListDetailSerializer(serializers.Serializer):
             "budget_complete": instance.budget_complete,
             "contact_person": instance.contact_person,
             "dealer": instance.dealer,
+            "dealer_paid": instance.dealer_paid,
             
         }
 
