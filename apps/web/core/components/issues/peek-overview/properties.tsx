@@ -44,6 +44,7 @@ import type { TIssueOperations } from "../issue-detail";
 import { IssueCycleSelect } from "../issue-detail/cycle-select";
 import { IssueLabel } from "../issue-detail/label";
 import { IssueModuleSelect } from "../issue-detail/module-select";
+import { DealerDropdown } from "@/components/issues/dealer-dropdown";
 
 // Vlastní ikonka bankovky
 const BudgetPropertyIcon = (props: any) => (
@@ -271,31 +272,16 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
   // --------------------------------
   
   // --- 5. DEALER (OBCHODNÍK) LOGIKA ---
-  const [dealer, setDealer] = useState(issue?.dealer ?? "");
-  const [isDealerEditing, setIsDealerEditing] = useState(false);
   const showDealer = true;
 
-  // Synchronizace s DB
-  useEffect(() => {
-    if (!isDealerEditing) {
-      setDealer(issue?.dealer ?? "");
-    }
-  }, [issue?.dealer, isDealerEditing]);
-
-  // Uložení
-  const submitDealer = async () => {
-    setIsDealerEditing(false);
-    const val = dealer.trim();
-    
+  const handleDealerChange = async (val: string) => {
     if (val === (issue?.dealer ?? "")) return;
-
     try {
       await issueOperations.update(workspaceSlug, projectId, issueId, {
         dealer: val,
       });
     } catch (error) {
       console.error(error);
-      setDealer(issue?.dealer ?? "");
     }
   };
 
@@ -346,32 +332,48 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
           </SidebarPropertyListItem>
         )}
         
-        {/* --- DEALER / OBCHODNÍK INPUT --- */}
+        {/* --- DEALER / OBCHODNÍK (DROPDOWN) --- */}
         {showDealer && (
           <SidebarPropertyListItem 
             icon={DealerPropertyIcon} 
             label="Obchodník"
           >
-              <div className="w-full h-7.5 flex items-center group">
+            <DealerDropdown
+              value={issue?.dealer ?? ""}
+              onChange={handleDealerChange}
+              disabled={disabled}
+            />
+          </SidebarPropertyListItem>
+        )}
+
+        {/* --- DEALER PAID / ZAPLACENO OBCHODNÍKOVI --- */}
+        {showDealer && (
+          <SidebarPropertyListItem 
+            icon={DealerPropertyIcon} 
+            label="Zaplaceno obch."
+          >
+            <div className="flex items-center w-full h-7.5 px-1.5">
+              <label className="flex items-center gap-2 cursor-pointer text-body-xs-regular">
                 <input
-                  type="text" 
-                  className="w-full bg-transparent text-left text-body-xs-medium text-custom-text-100 placeholder:text-custom-text-400 focus:outline-none rounded px-0 py-0.5"
-                  placeholder="Vybrat obchodníka..."
-                  value={dealer}
-                  onChange={(e) => setDealer(e.target.value)}
-                  onFocus={() => setIsDealerEditing(true)}
-                  onBlur={submitDealer}
-                  onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                  type="checkbox"
+                  checked={!!issue?.dealer_paid}
+                  onChange={async (e) => {
+                    try {
+                      await issueOperations.update(workspaceSlug, projectId, issueId, {
+                        dealer_paid: e.target.checked,
+                      });
+                    } catch (error) {
+                      console.error(error);
+                    }
+                  }}
                   disabled={disabled}
+                  className="h-4 w-4 rounded border-custom-border-300 text-custom-primary-100 focus:ring-custom-primary-100 cursor-pointer"
                 />
-                
-                {/* Ikonka tužky */}
-                {!isDealerEditing && !dealer && !disabled && (
-                    <span className="hidden group-hover:inline text-custom-text-400 ml-auto pr-2">
-                      ✎
-                    </span>
-                )}
-              </div>
+                <span className={issue?.dealer_paid ? "text-green-500" : "text-custom-text-400"}>
+                  {issue?.dealer_paid ? "Ano" : "Ne"}
+                </span>
+              </label>
+            </div>
           </SidebarPropertyListItem>
         )}
         

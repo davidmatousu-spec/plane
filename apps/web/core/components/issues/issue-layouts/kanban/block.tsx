@@ -125,7 +125,7 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
       </Tooltip>
 
       <IssueProperties
-        className="flex flex-wrap items-center gap-2 whitespace-nowrap text-tertiary pt-1.5"
+        className="flex flex-wrap items-center gap-2 whitespace-nowrap text-tertiary pt-1.5 kanban-priority-props"
         issue={issue}
         displayProperties={displayProperties}
         activeLayout="Kanban"
@@ -133,6 +133,28 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
         isReadOnly={isReadOnly}
         isEpic={isEpic}
       />
+
+      {issue.dealer && (
+        <div className="flex items-center gap-1.5 pt-1.5">
+          <div
+            className="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+            style={{
+              backgroundColor: issue.dealer_paid ? "rgba(34, 197, 94, 0.12)" : "rgba(99, 102, 241, 0.12)",
+              color: issue.dealer_paid ? "rgb(34, 197, 94)" : "rgb(129, 140, 248)",
+            }}
+          >
+            <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            <span className="truncate max-w-[120px]">{issue.dealer.split(" ")[0]}</span>
+            {issue.dealer_paid && (
+              <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </div>
+        </div>
+      )}
 
       {isEpic && displayProperties && (
         <WithDisplayPropertiesHOC
@@ -274,6 +296,18 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
             { "border border-accent-strong hover:border-accent-strong": getIsIssuePeeked(issue.id) },
             { "bg-layer-1 z-[100]": isCurrentBlockDragging }
           )}
+          style={{
+            backgroundColor:
+              issue.priority === "urgent"
+                ? "rgba(239, 68, 68, 0.15)"
+                : issue.priority === "high"
+                  ? "rgba(249, 115, 22, 0.14)"
+                  : issue.priority === "medium"
+                    ? "rgba(234, 179, 8, 0.12)"
+                    : issue.priority === "low"
+                      ? "rgba(59, 130, 246, 0.12)"
+                      : undefined,
+          }}
           onClick={() => handleIssuePeekOverview(issue)}
           disabled={!!issue?.tempId}
         >

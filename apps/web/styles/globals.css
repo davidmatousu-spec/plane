@@ -198,3 +198,9 @@
     0 0 4px --alpha(var(--background-color-accent-primary) / 40%) !important;
   will-change: transform, opacity;
 }
+
+/* Kanban priority cards - strengthen property pill borders */
+.kanban-priority-props button,
+.kanban-priority-props div[class*="border"] {
+  border-color: rgba(128, 128, 128, 0.45) !important;
+}

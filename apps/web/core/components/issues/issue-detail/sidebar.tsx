@@ -46,6 +46,7 @@ import { IssueCycleSelect } from "./cycle-select";
 import { IssueLabel } from "./label";
 import { IssueModuleSelect } from "./module-select";
 import type { TIssueOperations } from "./root";
+import { DealerDropdown } from "@/components/issues/dealer-dropdown";
 
 // Vlastní ikonka bankovky/rozpočtu ve stylu Plane
 const BudgetPropertyIcon = (props: any) => (
@@ -291,32 +292,16 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
   maxDate?.setDate(maxDate.getDate());
 
   // --- 5. DEALER (OBCHODNÍK) LOGIKA ---
-  const [dealer, setDealer] = useState(issue?.dealer ?? "");
-  const [isDealerEditing, setIsDealerEditing] = useState(false);
-  const showDealer = true; // Zobrazit vždy (nebo přidej isAllowed logiku jako u Budgetu)
+  const showDealer = true;
 
-  // Synchronizace s daty ze serveru
-  useEffect(() => {
-    if (!isDealerEditing) {
-      setDealer(issue?.dealer ?? "");
-    }
-  }, [issue?.dealer, isDealerEditing]);
-
-  // Uložení na server
-  const submitDealer = async () => {
-    setIsDealerEditing(false);
-    const val = dealer.trim();
-    
-    // Pokud se nic nezměnilo, neposílat request
+  const handleDealerChange = async (val: string) => {
     if (val === (issue?.dealer ?? "")) return;
-
     try {
       await issueOperations.update(workspaceSlug, projectId, issueId, {
-        dealer: val, // Musí odpovídat názvu v DB a Store
+        dealer: val,
       });
     } catch (error) {
       console.error(error);
-      setDealer(issue?.dealer ?? ""); // Revert při chybě
     }
   };
 
@@ -354,33 +339,50 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
               </SidebarPropertyListItem>
             )}
 
-           {/* --- DEALER / OBCHODNÍK --- */}
+            {/* --- DEALER / OBCHODNÍK (DROPDOWN) --- */}
             {showDealer && (
               <SidebarPropertyListItem 
                 icon={DealerPropertyIcon} 
                 label="Obchodník"
               >
-                <div className="group flex w-full items-center gap-2">
-                  <input
-                    type="text"
-                    className="w-full bg-transparent text-sm text-custom-text-100 placeholder:text-custom-text-400 focus:outline-none"
-                    placeholder="Vybrat obchodníka..."
-                    value={dealer}
-                    onChange={(e) => setDealer(e.target.value)}
-                    onFocus={() => setIsDealerEditing(true)}
-                    onBlur={submitDealer}
-                    onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-                    disabled={!isEditable} 
-                  />
-                  {/* Ikonka tužky při hoveru */}
-                  {!isDealerEditing && !dealer && isEditable && (
-                    <span className="hidden text-custom-text-400 group-hover:block">
-                      ✎
-                    </span>
-                  )}
-                </div>
+                <DealerDropdown
+                  value={issue?.dealer ?? ""}
+                  onChange={handleDealerChange}
+                  disabled={!isEditable}
+                />
               </SidebarPropertyListItem>
             )} 
+
+            {/* --- DEALER PAID / ZAPLACENO OBCHODNÍKOVI --- */}
+            {showDealer && (
+              <SidebarPropertyListItem 
+                icon={DealerPropertyIcon} 
+                label="Zaplaceno obch."
+              >
+                <div className="flex items-center w-full h-7.5 px-1.5">
+                  <label className="flex items-center gap-2 cursor-pointer text-body-xs-regular">
+                    <input
+                      type="checkbox"
+                      checked={!!issue?.dealer_paid}
+                      onChange={async (e) => {
+                        try {
+                          await issueOperations.update(workspaceSlug, projectId, issueId, {
+                            dealer_paid: e.target.checked,
+                          });
+                        } catch (error) {
+                          console.error(error);
+                        }
+                      }}
+                      disabled={!isEditable}
+                      className="h-4 w-4 rounded border-custom-border-300 text-custom-primary-100 focus:ring-custom-primary-100 cursor-pointer"
+                    />
+                    <span className={issue?.dealer_paid ? "text-green-500" : "text-custom-text-400"}>
+                      {issue?.dealer_paid ? "Ano" : "Ne"}
+                    </span>
+                  </label>
+                </div>
+              </SidebarPropertyListItem>
+            )}
             
             <SidebarPropertyListItem icon={StatePropertyIcon} label={t("common.state")}>
               <StateDropdown
