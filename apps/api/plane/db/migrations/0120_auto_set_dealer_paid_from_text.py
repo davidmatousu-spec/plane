@@ -1,26 +1,23 @@
 """
 Data migration: Auto-detect "zaplaceno" in dealer field and set dealer_paid=True.
-Also normalizes the dealer name to the canonical value.
-Uses raw queryset updates to avoid triggering custom model save() logic.
+Also normalizes dealer names to canonical values.
+Uses raw SQL to avoid model manager issues.
 """
-from django.db import migrations
+from django.db import migrations, connection
 
 
-# Dealer alias mapping (same as frontend dealer-config.ts)
+# Dealer alias mapping
 DEALER_ALIASES = {
-    # Adam Bosák
     "adam": "Adam Bosák",
     "bosák": "Adam Bosák",
     "bosak": "Adam Bosák",
     "adam bosák": "Adam Bosák",
     "adam bosak": "Adam Bosák",
-    # Josef Sankot
     "josef": "Josef Sankot",
     "sankot": "Josef Sankot",
     "šankot": "Josef Sankot",
     "josef sankot": "Josef Sankot",
     "josef šankot": "Josef Sankot",
-    # Jan Pertl
     "jan": "Jan Pertl",
     "pertl": "Jan Pertl",
     "jan pertl": "Jan Pertl",
@@ -31,77 +28,65 @@ CANONICAL_NAMES = ["Adam Bosák", "Josef Sankot", "Jan Pertl"]
 
 
 def normalize_dealer(raw):
-    """Normalize a dealer string to a canonical name."""
     if not raw or not raw.strip():
         return ""
     trimmed = raw.strip()
-
-    # Exact match
     for name in CANONICAL_NAMES:
         if name.lower() == trimmed.lower():
             return name
-
-    # Alias lookup
     key = trimmed.lower()
     if key in DEALER_ALIASES:
         return DEALER_ALIASES[key]
-
-    # Fuzzy: check if any alias is contained in the input
     for alias, full_name in DEALER_ALIASES.items():
         if alias in key or key in alias:
             return full_name
-
     return trimmed
 
 
 def auto_set_dealer_paid(apps, schema_editor):
-    """
-    Find issues where dealer field contains 'zaplaceno' (case-insensitive).
-    Set dealer_paid=True and normalize the dealer name.
-    Uses direct QuerySet.update() to avoid custom save() logic.
-    """
-    Issue = apps.get_model("db", "Issue")
-
-    # Step 1: Set dealer_paid=True for issues containing "zaplaceno"
-    issues_with_zaplaceno = Issue.objects.filter(dealer__icontains="zaplaceno")
-    paid_count = 0
-
-    for issue in issues_with_zaplaceno.iterator():
-        raw = issue.dealer or ""
-        # Remove "zaplaceno" patterns to extract the dealer name
-        cleaned = raw.lower()
-        for pattern in ["- zaplaceno", "zaplaceno -", "zaplaceno", "- zaplac", "zaplac"]:
-            cleaned = cleaned.replace(pattern, "")
-        cleaned = cleaned.strip(" -.,;:/")
-
-        normalized = normalize_dealer(cleaned) if cleaned else normalize_dealer(raw)
-
-        # Use QuerySet.update() to bypass custom save()
-        Issue.objects.filter(pk=issue.pk).update(
-            dealer=normalized if normalized else issue.dealer,
-            dealer_paid=True,
+    with connection.cursor() as cursor:
+        # Step 1: Find issues with "zaplaceno" in dealer field
+        cursor.execute(
+            "SELECT id, dealer FROM issues WHERE LOWER(dealer) LIKE %s",
+            ["%zaplaceno%"],
         )
-        paid_count += 1
+        rows = cursor.fetchall()
+        paid_count = 0
 
-    if paid_count:
-        print(f"\n  -> Set dealer_paid=True for {paid_count} issues")
+        for issue_id, raw_dealer in rows:
+            cleaned = raw_dealer.lower()
+            for pattern in ["- zaplaceno", "zaplaceno -", "zaplaceno", "- zaplac", "zaplac"]:
+                cleaned = cleaned.replace(pattern, "")
+            cleaned = cleaned.strip(" -.,;:/")
+            normalized = normalize_dealer(cleaned) if cleaned else normalize_dealer(raw_dealer)
 
-    # Step 2: Normalize remaining dealer names
-    all_with_dealer = (
-        Issue.objects.filter(dealer__isnull=False)
-        .exclude(dealer="")
-        .exclude(dealer__in=CANONICAL_NAMES)
-    )
-    norm_count = 0
+            cursor.execute(
+                "UPDATE issues SET dealer = %s, dealer_paid = TRUE WHERE id = %s",
+                [normalized if normalized else raw_dealer, issue_id],
+            )
+            paid_count += 1
 
-    for issue in all_with_dealer.iterator():
-        normalized = normalize_dealer(issue.dealer)
-        if normalized != issue.dealer:
-            Issue.objects.filter(pk=issue.pk).update(dealer=normalized)
-            norm_count += 1
+        if paid_count:
+            print(f"\n  -> Set dealer_paid=True for {paid_count} issues")
 
-    if norm_count:
-        print(f"  -> Normalized {norm_count} dealer names")
+        # Step 2: Normalize remaining dealer names
+        cursor.execute(
+            "SELECT id, dealer FROM issues WHERE dealer IS NOT NULL AND dealer != ''",
+        )
+        rows = cursor.fetchall()
+        norm_count = 0
+
+        for issue_id, raw_dealer in rows:
+            normalized = normalize_dealer(raw_dealer)
+            if normalized != raw_dealer:
+                cursor.execute(
+                    "UPDATE issues SET dealer = %s WHERE id = %s",
+                    [normalized, issue_id],
+                )
+                norm_count += 1
+
+        if norm_count:
+            print(f"  -> Normalized {norm_count} dealer names")
 
 
 class Migration(migrations.Migration):
