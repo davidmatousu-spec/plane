@@ -294,6 +294,15 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
   // --- 5. DEALER (OBCHODNÍK) LOGIKA ---
   const showDealer = true;
 
+  // Oprávnění pro "Zaplaceno obchodníkovi" - pouze vybraní uživatelé
+  const ALLOWED_DEALER_PAID_USERS = [
+    "david.matousu@gmail.com",
+    "adam.bosak@onixia.cz",
+  ];
+  const showDealerPaid = ALLOWED_DEALER_PAID_USERS.some(
+    (email) => email.toLowerCase() === currentUserEmail
+  );
+
   const handleDealerChange = async (val: string) => {
     if (val === (issue?.dealer ?? "")) return;
     try {
@@ -354,7 +363,7 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
             )} 
 
             {/* --- DEALER PAID / ZAPLACENO OBCHODNÍKOVI --- */}
-            {showDealer && (
+            {showDealerPaid && (
               <SidebarPropertyListItem 
                 icon={DealerPropertyIcon} 
                 label="Zaplaceno obch."
