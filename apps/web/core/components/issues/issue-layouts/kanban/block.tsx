@@ -23,6 +23,7 @@ import { HIGHLIGHT_CLASS, getIssueBlockId } from "@/components/issues/issue-layo
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useKanbanView } from "@/hooks/store/use-kanban-view";
 import { useProject } from "@/hooks/store/use-project";
+import { useProjectState } from "@/hooks/store/use-project-state";
 import useIssuePeekOverviewRedirection from "@/hooks/use-issue-peek-overview-redirection";
 import { usePlatformOS } from "@/hooks/use-platform-os";
 // plane web components
@@ -50,6 +51,7 @@ interface IssueBlockProps {
   shouldRenderByDefault?: boolean;
   isEpic?: boolean;
   childIssueIds?: string[];
+  isNested?: boolean;
 }
 
 interface IssueDetailsBlockProps {
@@ -190,6 +192,7 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
     shouldRenderByDefault,
     isEpic = false,
     childIssueIds,
+    isNested = false,
   } = props;
 
   const cardRef = useRef<HTMLAnchorElement | null>(null);
@@ -201,6 +204,7 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
   const { getIsIssuePeeked } = useIssueDetail(isEpic ? EIssueServiceType.EPICS : EIssueServiceType.ISSUES);
   const { handleRedirection } = useIssuePeekOverviewRedirection(isEpic);
   const { isMobile } = usePlatformOS();
+  const { getProjectStates } = useProjectState();
 
   // handlers
   const handleIssuePeekOverview = (issue: TIssue) => handleRedirection(workspaceSlug, issue, isMobile);
@@ -272,13 +276,20 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
 
   if (!issue) return null;
 
+  // State color stripe for sub-issues: shows the PARENT's state color
+  // so you can see which parent group the sub-issue belongs to
+  const parentIssue = issue.parent_id ? issuesMap[issue.parent_id] : undefined;
+  const stateColor = parentIssue
+    ? getProjectStates(parentIssue.project_id)?.find((s) => s.id === parentIssue.state_id)?.color || "#6b7280"
+    : undefined;
+
   return (
     <>
       <DropIndicator isVisible={!isCurrentBlockDragging && isDraggingOverBlock} />
       <div
         id={`issue-${issueId}`}
         // make Z-index higher at the beginning of drag, to have a issue drag image of issue block without any overlaps
-        className={cn("group/kanban-block relative mb-2", { "z-[1]": isCurrentBlockDragging })}
+        className={cn("group/kanban-block relative", isNested ? "mb-1" : "mb-2", { "z-[1]": isCurrentBlockDragging })}
         onDragStart={() => {
           if (isDragAllowed) setIsCurrentBlockDragging(true);
           else {
@@ -297,7 +308,10 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
           href={workItemLink}
           ref={cardRef}
           className={cn(
-            "block rounded-lg border outline-[0.5px] outline-transparent shadow-raised-100 w-full border-subtle bg-layer-2 text-13 transition-all p-3 hover:shadow-raised-200 hover:border-strong",
+            "block rounded-lg border outline-[0.5px] outline-transparent w-full border-subtle bg-layer-2 transition-all hover:border-strong",
+            isNested
+              ? "text-xs py-1.5 px-2 shadow-none hover:shadow-raised-100"
+              : "text-13 p-3 shadow-raised-100 hover:shadow-raised-200",
             { "hover:cursor-pointer": isDragAllowed },
             { "border border-accent-strong hover:border-accent-strong": getIsIssuePeeked(issue.id) },
             { "bg-layer-1 z-[100]": isCurrentBlockDragging }
@@ -313,6 +327,9 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
                     : issue.priority === "low"
                       ? "rgba(59, 130, 246, 0.12)"
                       : undefined,
+            ...(stateColor
+              ? { borderLeft: `3px solid ${stateColor}` }
+              : {}),
           }}
           onClick={() => handleIssuePeekOverview(issue)}
           disabled={!!issue?.tempId}
@@ -337,50 +354,35 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
           </RenderIfVisible>
         </ControlLink>
 
-        {/* Nested sub-issues */}
+        {/* Nested sub-issues – rendered as full draggable blocks with indentation */}
         {childIssueIds && childIssueIds.length > 0 && (
-          <div className="ml-4 mt-1 space-y-1">
+          <div className="mt-1 space-y-1 w-3/4 ml-auto">
             {childIssueIds.map((childId) => {
-              const childIssue = issuesMap[childId];
-              if (!childIssue) return null;
+              if (!childId) return null;
 
-              const childLink = generateWorkItemLink({
-                workspaceSlug,
-                projectId: childIssue.project_id,
-                issueId: childId,
-                projectIdentifier: getProjectIdentifierById(childIssue.project_id),
-                sequenceId: childIssue.sequence_id,
-                isEpic,
-                isArchived: !!childIssue.archived_at,
-              });
+              let childDraggableId = childId;
+              if (groupId) childDraggableId = `${childDraggableId}__${groupId}`;
+              if (subGroupId) childDraggableId = `${childDraggableId}__${subGroupId}`;
 
               return (
-                <ControlLink
-                  key={childId}
-                  id={`sub-${childId}`}
-                  href={childLink}
-                  className={cn(
-                    "block rounded-md border border-subtle/60 bg-layer-2/60 px-2.5 py-1.5 text-xs transition-all",
-                    "hover:shadow-raised-100 hover:border-strong hover:bg-layer-2 cursor-pointer"
-                  )}
-                  onClick={() => handleIssuePeekOverview(childIssue)}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-custom-text-400 shrink-0">↳</span>
-                    {childIssue.project_id && (
-                      <IssueIdentifier
-                        issueId={childId}
-                        projectId={childIssue.project_id}
-                        size="xs"
-                        variant="tertiary"
-                        displayProperties={displayProperties}
-                      />
-                    )}
-                    <span className="truncate text-custom-text-200 font-medium">
-                      {childIssue.name}
-                    </span>
-                  </div>
-                </ControlLink>
+                <KanbanIssueBlock
+                  key={childDraggableId}
+                  issueId={childId}
+                  groupId={groupId}
+                  subGroupId={subGroupId}
+                  shouldRenderByDefault
+                  issuesMap={issuesMap}
+                  displayProperties={displayProperties}
+                  updateIssue={updateIssue}
+                  quickActions={quickActions}
+                  draggableId={childDraggableId}
+                  canDropOverIssue={canDropOverIssue}
+                  canDragIssuesInCurrentGrouping={canDragIssuesInCurrentGrouping}
+                  canEditProperties={canEditProperties}
+                  scrollableContainerRef={scrollableContainerRef}
+                  isEpic={isEpic}
+                  isNested
+                />
               );
             })}
           </div>

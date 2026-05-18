@@ -1,5 +1,4 @@
 import type { MutableRefObject } from "react";
-import { useMemo } from "react";
 import { observer } from "mobx-react";
 // plane imports
 import type { TIssue, IIssueDisplayProperties, IIssueMap } from "@plane/types";
@@ -41,34 +40,28 @@ export const KanbanIssueBlocksList = observer(function KanbanIssueBlocksList(pro
   // Build parent→children map: for each issue in this column,
   // if it has a parent_id AND that parent is also in this same column,
   // treat it as a nested child (don't render it as a top-level card).
-  const { topLevelIds, childrenByParent } = useMemo(() => {
-    const parentIdsInColumn = new Set<string>();
-    const childToParent = new Map<string, string>();
+  // NOTE: No useMemo here – MobX observer needs to track issuesMap property access directly.
+  const childToParent = new Map<string, string>();
+  const idsInColumn = new Set(issueIds);
 
-    // First pass: collect all issue IDs in this column
-    const idsInColumn = new Set(issueIds);
-
-    // Second pass: identify children whose parent is also in this column
-    for (const issueId of issueIds) {
-      const issue = issuesMap[issueId];
-      if (issue?.parent_id && idsInColumn.has(issue.parent_id)) {
+  for (const issueId of issueIds) {
+    const issue = issuesMap[issueId];
+    if (issue?.parent_id && idsInColumn.has(issue.parent_id)) {
+      const parentIssue = issuesMap[issue.parent_id];
+      // Only nest if child and parent share the same state (prevents stale duplicates)
+      if (parentIssue && issue.state_id === parentIssue.state_id) {
         childToParent.set(issueId, issue.parent_id);
-        parentIdsInColumn.add(issue.parent_id);
       }
     }
+  }
 
-    // Top-level = not a child of anyone in this column
-    const topLevel = issueIds.filter((id) => !childToParent.has(id));
+  const topLevelIds = issueIds.filter((id) => !childToParent.has(id));
 
-    // Group children by parent
-    const byParent: Record<string, string[]> = {};
-    for (const [childId, parentId] of childToParent) {
-      if (!byParent[parentId]) byParent[parentId] = [];
-      byParent[parentId].push(childId);
-    }
-
-    return { topLevelIds: topLevel, childrenByParent: byParent };
-  }, [issueIds, issuesMap]);
+  const childrenByParent: Record<string, string[]> = {};
+  for (const [childId, parentId] of childToParent) {
+    if (!childrenByParent[parentId]) childrenByParent[parentId] = [];
+    childrenByParent[parentId].push(childId);
+  }
 
   return (
     <>
