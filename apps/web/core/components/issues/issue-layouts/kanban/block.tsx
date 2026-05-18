@@ -49,6 +49,7 @@ interface IssueBlockProps {
   scrollableContainerRef?: MutableRefObject<HTMLDivElement | null>;
   shouldRenderByDefault?: boolean;
   isEpic?: boolean;
+  childIssueIds?: string[];
 }
 
 interface IssueDetailsBlockProps {
@@ -188,6 +189,7 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
     scrollableContainerRef,
     shouldRenderByDefault,
     isEpic = false,
+    childIssueIds,
   } = props;
 
   const cardRef = useRef<HTMLAnchorElement | null>(null);
@@ -334,6 +336,55 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
             />
           </RenderIfVisible>
         </ControlLink>
+
+        {/* Nested sub-issues */}
+        {childIssueIds && childIssueIds.length > 0 && (
+          <div className="ml-4 mt-1 space-y-1">
+            {childIssueIds.map((childId) => {
+              const childIssue = issuesMap[childId];
+              if (!childIssue) return null;
+
+              const childLink = generateWorkItemLink({
+                workspaceSlug,
+                projectId: childIssue.project_id,
+                issueId: childId,
+                projectIdentifier: getProjectIdentifierById(childIssue.project_id),
+                sequenceId: childIssue.sequence_id,
+                isEpic,
+                isArchived: !!childIssue.archived_at,
+              });
+
+              return (
+                <ControlLink
+                  key={childId}
+                  id={`sub-${childId}`}
+                  href={childLink}
+                  className={cn(
+                    "block rounded-md border border-subtle/60 bg-layer-2/60 px-2.5 py-1.5 text-xs transition-all",
+                    "hover:shadow-raised-100 hover:border-strong hover:bg-layer-2 cursor-pointer"
+                  )}
+                  onClick={() => handleIssuePeekOverview(childIssue)}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-custom-text-400 shrink-0">↳</span>
+                    {childIssue.project_id && (
+                      <IssueIdentifier
+                        issueId={childId}
+                        projectId={childIssue.project_id}
+                        size="xs"
+                        variant="tertiary"
+                        displayProperties={displayProperties}
+                      />
+                    )}
+                    <span className="truncate text-custom-text-200 font-medium">
+                      {childIssue.name}
+                    </span>
+                  </div>
+                </ControlLink>
+              );
+            })}
+          </div>
+        )}
       </div>
     </>
   );
