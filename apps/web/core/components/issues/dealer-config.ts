@@ -77,3 +77,27 @@ export function normalizeDealer(raw: string | null | undefined): string {
   // 4. No match - return original
   return trimmed;
 }
+
+/**
+ * Parse a comma-separated dealer string into an array of normalized names.
+ * - "" or null → []
+ * - "Adam Bosák" → ["Adam Bosák"]
+ * - "Adam Bosák, Josef Sankot" → ["Adam Bosák", "Josef Sankot"]
+ */
+export function parseDealers(raw: string | null | undefined): string[] {
+  if (!raw || raw.trim() === "") return [];
+  return raw
+    .split(",")
+    .map((s) => normalizeDealer(s.trim()))
+    .filter((s) => s !== "");
+}
+
+/**
+ * Join an array of dealer names back into a comma-separated string.
+ * - [] → ""
+ * - ["Adam Bosák"] → "Adam Bosák"
+ * - ["Adam Bosák", "Josef Sankot"] → "Adam Bosák, Josef Sankot"
+ */
+export function joinDealers(dealers: string[]): string {
+  return dealers.filter((s) => s !== "").join(", ");
+}

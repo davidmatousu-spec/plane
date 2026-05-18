@@ -32,7 +32,7 @@ import { IssueStats } from "@/plane-web/components/issues/issue-layouts/issue-st
 import type { TRenderQuickActions } from "../list/list-view-types";
 import { IssueProperties } from "../properties/all-properties";
 import { WithDisplayPropertiesHOC } from "../properties/with-display-properties-HOC";
-import { normalizeDealer } from "@/components/issues/dealer-config";
+import { parseDealers } from "@/components/issues/dealer-config";
 
 interface IssueBlockProps {
   issueId: string;
@@ -135,25 +135,28 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
         isEpic={isEpic}
       />
 
-      {issue.dealer && (
-        <div className="flex items-center gap-1.5 pt-1.5">
-          <div
-            className="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
-            style={{
-              backgroundColor: issue.dealer_paid ? "rgba(34, 197, 94, 0.12)" : "rgba(99, 102, 241, 0.12)",
-              color: issue.dealer_paid ? "rgb(34, 197, 94)" : "rgb(129, 140, 248)",
-            }}
-          >
-            <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-            <span className="truncate max-w-[120px]">{normalizeDealer(issue.dealer).split(" ")[0]}</span>
-            {issue.dealer_paid && (
-              <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+      {issue.dealer && parseDealers(issue.dealer).length > 0 && (
+        <div className="flex items-center gap-1.5 pt-1.5 flex-wrap">
+          {parseDealers(issue.dealer).map((dealerName) => (
+            <div
+              key={dealerName}
+              className="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+              style={{
+                backgroundColor: issue.dealer_paid ? "rgba(34, 197, 94, 0.12)" : "rgba(99, 102, 241, 0.12)",
+                color: issue.dealer_paid ? "rgb(34, 197, 94)" : "rgb(129, 140, 248)",
+              }}
+            >
+              <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
-            )}
-          </div>
+              <span className="truncate max-w-[120px]">{dealerName.split(" ")[0]}</span>
+              {issue.dealer_paid && (
+                <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </div>
+          ))}
         </div>
       )}
 

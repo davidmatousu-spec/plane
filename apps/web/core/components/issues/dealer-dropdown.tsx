@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { observer } from "mobx-react";
 import { cn } from "@plane/utils";
-import { DEALER_OPTIONS, normalizeDealer } from "./dealer-config";
+import { DEALER_OPTIONS, parseDealers, joinDealers } from "./dealer-config";
 
 interface DealerDropdownProps {
   value: string;
@@ -12,20 +12,13 @@ interface DealerDropdownProps {
 }
 
 export const DealerDropdown = observer(function DealerDropdown(props: DealerDropdownProps) {
-  const { value, onChange, disabled = false, placeholder = "Vybrat obchodníka...", className } = props;
+  const { value, onChange, disabled = false, placeholder = "Vybrat obchodníky...", className } = props;
 
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Normalize value on first render (auto-fix partial names)
-  useEffect(() => {
-    if (value) {
-      const normalized = normalizeDealer(value);
-      if (normalized !== value) {
-        onChange(normalized);
-      }
-    }
-  }, []); // Only on mount
+  // Parse current value into array
+  const selectedDealers = parseDealers(value);
 
   // Close on outside click
   useEffect(() => {
@@ -40,9 +33,19 @@ export const DealerDropdown = observer(function DealerDropdown(props: DealerDrop
     }
   }, [isOpen]);
 
-  const handleSelect = (dealerValue: string) => {
-    onChange(dealerValue);
-    setIsOpen(false);
+  const handleToggle = (dealerValue: string) => {
+    const isSelected = selectedDealers.includes(dealerValue);
+    let newDealers: string[];
+
+    if (isSelected) {
+      // Remove
+      newDealers = selectedDealers.filter((d) => d !== dealerValue);
+    } else {
+      // Add
+      newDealers = [...selectedDealers, dealerValue];
+    }
+
+    onChange(joinDealers(newDealers));
   };
 
   const handleClear = (e: React.MouseEvent) => {
@@ -51,9 +54,11 @@ export const DealerDropdown = observer(function DealerDropdown(props: DealerDrop
     setIsOpen(false);
   };
 
-  // Display label
-  const displayLabel = value || "";
-  const isKnownDealer = DEALER_OPTIONS.some((o) => o.value === value);
+  const handleRemoveOne = (e: React.MouseEvent, dealerValue: string) => {
+    e.stopPropagation();
+    const newDealers = selectedDealers.filter((d) => d !== dealerValue);
+    onChange(joinDealers(newDealers));
+  };
 
   return (
     <div ref={dropdownRef} className={cn("relative w-full", className)}>
@@ -61,7 +66,7 @@ export const DealerDropdown = observer(function DealerDropdown(props: DealerDrop
       <button
         type="button"
         className={cn(
-          "flex w-full items-center justify-between gap-1 rounded px-1.5 py-0.5 text-left text-sm transition-all",
+          "flex w-full items-center justify-between gap-1 rounded px-1.5 py-0.5 text-left text-sm transition-all min-h-[28px]",
           "bg-transparent hover:bg-custom-background-80/50",
           "text-custom-text-100 placeholder:text-custom-text-400",
           "focus:outline-none",
@@ -70,15 +75,34 @@ export const DealerDropdown = observer(function DealerDropdown(props: DealerDrop
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
       >
-        <span className={cn("truncate", !displayLabel && "text-custom-text-400")}>
-          {displayLabel || placeholder}
+        <span className="flex flex-wrap items-center gap-1 flex-1 min-w-0">
+          {selectedDealers.length === 0 && (
+            <span className="text-custom-text-400">{placeholder}</span>
+          )}
+          {selectedDealers.map((dealer) => (
+            <span
+              key={dealer}
+              className="inline-flex items-center gap-0.5 rounded-full bg-custom-background-80 px-2 py-0.5 text-xs font-medium text-custom-text-200"
+            >
+              <span className="truncate max-w-[100px]">{dealer.split(" ")[0]}</span>
+              {!disabled && (
+                <span
+                  className="text-custom-text-400 hover:text-custom-text-100 cursor-pointer ml-0.5"
+                  onClick={(e) => handleRemoveOne(e, dealer)}
+                  title="Odebrat"
+                >
+                  ✕
+                </span>
+              )}
+            </span>
+          ))}
         </span>
         <span className="flex items-center gap-0.5 shrink-0">
-          {value && !disabled && (
+          {selectedDealers.length > 0 && !disabled && (
             <span
               className="text-custom-text-400 hover:text-custom-text-200 cursor-pointer text-xs"
               onClick={handleClear}
-              title="Vymazat"
+              title="Vymazat vše"
             >
               ✕
             </span>
@@ -105,38 +129,40 @@ export const DealerDropdown = observer(function DealerDropdown(props: DealerDrop
           )}
           style={{ backgroundColor: "var(--background-color-layer-2, #1f2228)" }}
         >
-          {DEALER_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              className={cn(
-                "flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm",
-                "hover:bg-custom-background-80 transition-colors",
-                value === option.value
-                  ? "text-custom-text-100 font-medium"
-                  : "text-custom-text-200"
-              )}
-              onClick={() => handleSelect(option.value)}
-            >
-              {value === option.value && (
-                <svg className="h-3 w-3 shrink-0 text-custom-primary-100" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              )}
-              {value !== option.value && <span className="w-3 shrink-0" />}
-              <span>{option.label}</span>
-            </button>
-          ))}
-
-          {/* Show current value if it's not in the list (legacy data) */}
-          {value && !isKnownDealer && (
-            <>
-              <div className="border-t border-custom-border-200 my-1" />
-              <div className="px-3 py-1.5 text-xs text-custom-text-400">
-                Aktuální: <span className="text-custom-text-200">{value}</span>
-              </div>
-            </>
-          )}
+          {DEALER_OPTIONS.map((option) => {
+            const isSelected = selectedDealers.includes(option.value);
+            return (
+              <button
+                key={option.value}
+                type="button"
+                className={cn(
+                  "flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm",
+                  "hover:bg-custom-background-80 transition-colors",
+                  isSelected
+                    ? "text-custom-text-100 font-medium"
+                    : "text-custom-text-200"
+                )}
+                onClick={() => handleToggle(option.value)}
+              >
+                {/* Checkbox */}
+                <span
+                  className={cn(
+                    "flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-sm border transition-colors",
+                    isSelected
+                      ? "border-custom-primary-100 bg-custom-primary-100"
+                      : "border-custom-border-300"
+                  )}
+                >
+                  {isSelected && (
+                    <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </span>
+                <span>{option.label}</span>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
