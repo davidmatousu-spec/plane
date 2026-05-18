@@ -1,4 +1,5 @@
 // Dealer (Obchodník) configuration - hardcoded list + auto-normalization
+// v2: multi-dealer support (parseDealers / joinDealers)
 
 export const DEALER_OPTIONS = [
   { value: "Adam Bosák", label: "Adam Bosák" },
