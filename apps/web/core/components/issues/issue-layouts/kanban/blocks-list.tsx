@@ -57,8 +57,9 @@ export const KanbanIssueBlocksList = observer(function KanbanIssueBlocksList(pro
     const issue = issuesMap[issueId];
     if (issue?.parent_id && idsInColumn.has(issue.parent_id)) {
       const parentIssue = issuesMap[issue.parent_id];
-      // Only nest if child and parent share the same state (prevents stale duplicates)
-      if (parentIssue && issue.state_id === parentIssue.state_id) {
+      // If parent is loaded, verify state matches (prevents stale duplicates during drag).
+      // If parent is NOT loaded yet (pagination), trust column grouping – same column = same state.
+      if (!parentIssue || issue.state_id === parentIssue.state_id) {
         childToParent.set(issueId, issue.parent_id);
       }
     }
