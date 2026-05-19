@@ -16,11 +16,22 @@ import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useProject } from "@/hooks/store/use-project";
 import useIssuePeekOverviewRedirection from "@/hooks/use-issue-peek-overview-redirection";
 import { usePlatformOS } from "@/hooks/use-platform-os";
+import { useUserProfile } from "@/hooks/store/user/user-user-profile";
 // plane web components
 import { IssueIdentifier } from "@/plane-web/components/issues/issue-details/issue-identifier";
 // local components
 import { SubIssuesListItemProperties } from "./properties";
 import { SubIssuesListRoot } from "./root";
+
+// --- ALLOWED USERS (same as sidebar.tsx) ---
+const ALLOWED_USERS = [
+  "d670304d-4017-4dd2-9641-6966fa60352a",
+  "david.matousu@gmail.com",
+  "tereza.plechackova@onixia-pasport.cz",
+  "adam.bosak@onixia.cz",
+  "jan.pertl@onixia.cz",
+  "josef.sankot@onixia-pasport.cz"
+];
 
 type Props = {
   workspaceSlug: string;
@@ -70,6 +81,17 @@ export const SubIssuesListItem = observer(function SubIssuesListItem(props: Prop
   const { handleRedirection } = useIssuePeekOverviewRedirection();
   const { isMobile } = usePlatformOS();
   const issue = getIssueById(issueId);
+
+  // Check if current user is allowed to see budget/dealer
+  const userProfileStore = useUserProfile();
+  // @ts-ignore
+  const currentUserData = userProfileStore?.store?.user?.data || userProfileStore?.data;
+  const currentUserEmail = currentUserData?.email?.toLowerCase();
+  const currentUserId = currentUserData?.id;
+  const isAllowed = ALLOWED_USERS.some((allowed) => {
+    const a = allowed.toLowerCase();
+    return a === currentUserId || a === currentUserEmail;
+  });
 
   // derived values
   const projectDetail = (issue && issue.project_id && project.getProjectById(issue.project_id)) || undefined;
@@ -163,15 +185,15 @@ export const SubIssuesListItem = observer(function SubIssuesListItem(props: Prop
                 <span className="flex-1 w-0 truncate text-13 text-primary">{issue.name}</span>
               </Tooltip>
 
-              {/* Budget */}
-              {issue.budget != null && issue.budget > 0 && (
+              {/* Budget (restricted) */}
+              {isAllowed && issue.budget != null && issue.budget > 0 && (
                 <div className="flex items-center h-5 rounded-sm border border-subtle px-1.5 text-xs text-custom-text-300 flex-shrink-0">
                   {new Intl.NumberFormat("cs-CZ").format(issue.budget)}&nbsp;Kč
                 </div>
               )}
 
-              {/* Dealers */}
-              {issue.dealer && issue.dealer.trim() !== "" && (
+              {/* Dealers (restricted) */}
+              {isAllowed && issue.dealer && issue.dealer.trim() !== "" && (
                 <div className="flex items-center gap-1 flex-shrink-0">
                   {issue.dealer.split(",").map((d: string) => d.trim()).filter(Boolean).map((dealerName: string) => (
                     <div
