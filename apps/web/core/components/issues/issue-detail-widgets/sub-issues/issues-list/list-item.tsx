@@ -192,8 +192,8 @@ export const SubIssuesListItem = observer(function SubIssuesListItem(props: Prop
                 </div>
               )}
 
-              {/* Dealers (restricted) */}
-              {isAllowed && issue.dealer && issue.dealer.trim() !== "" && (
+              {/* Dealers */}
+              {issue.dealer && issue.dealer.trim() !== "" && (
                 <div className="flex items-center gap-1 flex-shrink-0">
                   {issue.dealer.split(",").map((d: string) => d.trim()).filter(Boolean).map((dealerName: string) => (
                     <div
