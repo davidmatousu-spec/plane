@@ -1,8 +1,11 @@
 import type { MutableRefObject } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { observer } from "mobx-react";
+import { useParams } from "next/navigation";
 // plane imports
 import type { TIssue, IIssueDisplayProperties, IIssueMap } from "@plane/types";
+// store
+import { rootStore } from "@/lib/store-context";
 // local imports
 import type { TRenderQuickActions } from "../list/list-view-types";
 import { KanbanIssueBlock } from "./block";
@@ -38,6 +41,11 @@ export const KanbanIssueBlocksList = observer(function KanbanIssueBlocksList(pro
     isEpic = false,
   } = props;
 
+  const { workspaceSlug } = useParams();
+
+  // Track which parent IDs we've already requested to avoid re-fetching
+  const fetchedParentsRef = useRef<Set<string>>(new Set());
+
   // Safety net: re-render shortly after issueIds changes so that any
   // parent_id values that arrive asynchronously are picked up.
   const [, setTick] = useState(0);
@@ -46,13 +54,52 @@ export const KanbanIssueBlocksList = observer(function KanbanIssueBlocksList(pro
     return () => clearTimeout(timer);
   }, [issueIds.length]);
 
+  // Auto-fetch missing parent issues that aren't in issuesMap yet (due to pagination).
+  // When loaded, MobX triggers re-render → injection picks them up → nesting works.
+  useEffect(() => {
+    if (!workspaceSlug) return;
+
+    const missingParents: { parentId: string; projectId: string }[] = [];
+
+    for (const issueId of issueIds) {
+      const issue = issuesMap[issueId];
+      if (
+        issue?.parent_id &&
+        !issuesMap[issue.parent_id] &&
+        !fetchedParentsRef.current.has(issue.parent_id) &&
+        issue.project_id
+      ) {
+        missingParents.push({ parentId: issue.parent_id, projectId: issue.project_id });
+        fetchedParentsRef.current.add(issue.parent_id);
+      }
+    }
+
+    if (missingParents.length === 0) return;
+
+    // Group by project for batch fetch
+    const byProject = new Map<string, string[]>();
+    for (const { parentId, projectId } of missingParents) {
+      if (!byProject.has(projectId)) byProject.set(projectId, []);
+      byProject.get(projectId)!.push(parentId);
+    }
+
+    const issueStoreInstance = rootStore.issue.issues;
+
+    for (const [projectId, parentIds] of byProject) {
+      issueStoreInstance.getIssues(workspaceSlug as string, projectId, parentIds).catch(() => {
+        // If fetch fails, allow retry later
+        parentIds.forEach((id) => fetchedParentsRef.current.delete(id));
+      });
+    }
+  }, [issueIds, issuesMap, workspaceSlug]);
+
   // Build parent→children map.
   // Due to pagination, issueIds may not contain ALL issues in this column.
   // A child may be loaded (in issueIds) but its parent may not be (still paginated).
   // Strategy:
-  //   1. If parent IS in issueIds → nest child under parent (normal case)
+  //   1. If parent IS in issueIds → nest child under parent
   //   2. If parent is NOT in issueIds but IS in issuesMap with same state → inject parent, nest child
-  //   3. If parent is not available at all → leave child standalone
+  //   3. If parent is not available at all → leave child standalone (fetch triggered above)
   const childToParent = new Map<string, string>();
   const idsInColumn = new Set(issueIds);
   const parentIdsToInject = new Set<string>();
