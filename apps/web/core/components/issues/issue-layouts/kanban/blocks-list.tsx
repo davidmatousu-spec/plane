@@ -49,18 +49,29 @@ export const KanbanIssueBlocksList = observer(function KanbanIssueBlocksList(pro
   // Build parent→children map: for each issue in this column,
   // if it has a parent_id AND that parent is also in this same column,
   // treat it as a nested child (don't render it as a top-level card).
+  // IMPORTANT: Only nest when parent appears BEFORE child in the sorted list,
+  // so the child moves UP (stays visible). If parent is below, keep child standalone.
   // NOTE: No useMemo here – MobX observer needs to track issuesMap property access directly.
   const childToParent = new Map<string, string>();
   const idsInColumn = new Set(issueIds);
 
+  // Build index map for position comparison
+  const positionMap = new Map<string, number>();
+  issueIds.forEach((id, idx) => positionMap.set(id, idx));
+
   for (const issueId of issueIds) {
     const issue = issuesMap[issueId];
     if (issue?.parent_id && idsInColumn.has(issue.parent_id)) {
-      const parentIssue = issuesMap[issue.parent_id];
-      // If parent is loaded, verify state matches (prevents stale duplicates during drag).
-      // If parent is NOT loaded yet (pagination), trust column grouping – same column = same state.
-      if (!parentIssue || issue.state_id === parentIssue.state_id) {
-        childToParent.set(issueId, issue.parent_id);
+      const parentPos = positionMap.get(issue.parent_id) ?? Infinity;
+      const childPos = positionMap.get(issueId) ?? Infinity;
+      // Only nest if parent comes BEFORE child (child moves up, not off-screen)
+      if (parentPos < childPos) {
+        const parentIssue = issuesMap[issue.parent_id];
+        // If parent is loaded, verify state matches (prevents stale duplicates during drag).
+        // If parent is NOT loaded yet (pagination), trust column grouping – same column = same state.
+        if (!parentIssue || issue.state_id === parentIssue.state_id) {
+          childToParent.set(issueId, issue.parent_id);
+        }
       }
     }
   }
