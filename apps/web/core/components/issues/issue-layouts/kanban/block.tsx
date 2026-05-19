@@ -279,8 +279,10 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
   // State color stripe for sub-issues: shows the PARENT's state color
   // so you can see which parent group the sub-issue belongs to
   const parentIssue = issue.parent_id ? issuesMap[issue.parent_id] : undefined;
-  const stateColor = parentIssue
-    ? getProjectStates(parentIssue.project_id)?.find((s) => s.id === parentIssue.state_id)?.color || "#6b7280"
+  const stateColor = issue.parent_id
+    ? parentIssue
+      ? getProjectStates(parentIssue.project_id)?.find((s) => s.id === parentIssue.state_id)?.color || "#6b7280"
+      : "#6b7280" // parent not loaded yet – use gray fallback
     : undefined;
 
   return (
@@ -352,15 +354,21 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
               isEpic={isEpic}
             />
             {/* Show parent issue reference for standalone sub-issues (not nested) */}
-            {!isNested && parentIssue && (
+            {!isNested && issue.parent_id && (
               <div className="flex items-center gap-1 pt-1 text-[10px] text-custom-text-400 truncate">
                 <span>↑</span>
-                {parentIssue.project_id && (
-                  <span className="shrink-0 font-medium">
-                    {getProjectIdentifierById(parentIssue.project_id)}-{parentIssue.sequence_id}
-                  </span>
+                {parentIssue ? (
+                  <>
+                    {parentIssue.project_id && (
+                      <span className="shrink-0 font-medium">
+                        {getProjectIdentifierById(parentIssue.project_id)}-{parentIssue.sequence_id}
+                      </span>
+                    )}
+                    <span className="truncate">{parentIssue.name}</span>
+                  </>
+                ) : (
+                  <span className="italic">sub-issue</span>
                 )}
-                <span className="truncate">{parentIssue.name}</span>
               </div>
             )}
           </RenderIfVisible>
