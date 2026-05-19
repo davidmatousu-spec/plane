@@ -46,21 +46,40 @@ export const KanbanIssueBlocksList = observer(function KanbanIssueBlocksList(pro
     return () => clearTimeout(timer);
   }, [issueIds.length]);
 
-  // Build parent→children map: for each issue in this column,
-  // if it has a parent_id AND that parent is also in this same column,
-  // treat it as a nested child (don't render it as a top-level card).
-  // Same column = same state, so no extra state_id check needed.
+  // Build parent→children map.
+  // Due to pagination, issueIds may not contain ALL issues in this column.
+  // A child may be loaded (in issueIds) but its parent may not be (still paginated).
+  // Strategy:
+  //   1. If parent IS in issueIds → nest child under parent (normal case)
+  //   2. If parent is NOT in issueIds but IS in issuesMap with same state → inject parent, nest child
+  //   3. If parent is not available at all → leave child standalone
   const childToParent = new Map<string, string>();
   const idsInColumn = new Set(issueIds);
+  const parentIdsToInject = new Set<string>();
 
   for (const issueId of issueIds) {
     const issue = issuesMap[issueId];
-    if (issue?.parent_id && idsInColumn.has(issue.parent_id)) {
+    if (!issue?.parent_id) continue;
+
+    if (idsInColumn.has(issue.parent_id)) {
+      // Parent is already in issueIds → nest normally
       childToParent.set(issueId, issue.parent_id);
+    } else {
+      // Parent not in issueIds (pagination). Check if parent is loaded in issuesMap
+      // and belongs to this column (same state = same groupId)
+      const parentIssue = issuesMap[issue.parent_id];
+      if (parentIssue && parentIssue.state_id === groupId) {
+        childToParent.set(issueId, issue.parent_id);
+        parentIdsToInject.add(issue.parent_id);
+      }
     }
   }
 
-  const topLevelIds = issueIds.filter((id) => !childToParent.has(id));
+  // Build final top-level list: original issues minus nested children, plus injected parents
+  const topLevelIds = [
+    ...issueIds.filter((id) => !childToParent.has(id)),
+    ...Array.from(parentIdsToInject),
+  ];
 
   const childrenByParent: Record<string, string[]> = {};
   for (const [childId, parentId] of childToParent) {
