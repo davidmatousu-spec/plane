@@ -162,6 +162,31 @@ export const SubIssuesListItem = observer(function SubIssuesListItem(props: Prop
               <Tooltip tooltipContent={issue.name} isMobile={isMobile}>
                 <span className="flex-1 w-0 truncate text-13 text-primary">{issue.name}</span>
               </Tooltip>
+
+              {/* Budget */}
+              {issue.budget != null && issue.budget > 0 && (
+                <div className="flex items-center h-5 rounded-sm border border-subtle px-1.5 text-xs text-custom-text-300 flex-shrink-0">
+                  {new Intl.NumberFormat("cs-CZ").format(issue.budget)}&nbsp;Kč
+                </div>
+              )}
+
+              {/* Dealers */}
+              {issue.dealer && issue.dealer.trim() !== "" && (
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {issue.dealer.split(",").map((d: string) => d.trim()).filter(Boolean).map((dealerName: string) => (
+                    <div
+                      key={dealerName}
+                      className="flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium"
+                      style={{
+                        backgroundColor: issue.dealer_paid ? "rgba(34, 197, 94, 0.12)" : "rgba(99, 102, 241, 0.12)",
+                        color: issue.dealer_paid ? "rgb(34, 197, 94)" : "rgb(129, 140, 248)",
+                      }}
+                    >
+                      <span className="truncate max-w-[80px]">{dealerName.split(" ")[0]}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div
