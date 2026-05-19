@@ -62,10 +62,11 @@ interface IssueDetailsBlockProps {
   quickActions: TRenderQuickActions;
   isReadOnly: boolean;
   isEpic?: boolean;
+  isNested?: boolean;
 }
 
 const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props: IssueDetailsBlockProps) {
-  const { cardRef, issue, updateIssue, quickActions, isReadOnly, displayProperties, isEpic = false } = props;
+  const { cardRef, issue, updateIssue, quickActions, isReadOnly, displayProperties, isEpic = false, isNested = false } = props;
   // refs
   const menuActionRef = useRef<HTMLDivElement | null>(null);
   // states
@@ -139,22 +140,27 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
       />
 
       {issue.dealer && parseDealers(issue.dealer).length > 0 && (
-        <div className="flex items-center gap-1.5 pt-1.5 flex-wrap">
+        <div className={cn("flex items-center gap-1.5 flex-wrap", isNested ? "pt-1" : "pt-1.5")}>
           {parseDealers(issue.dealer).map((dealerName) => (
             <div
               key={dealerName}
-              className="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+              className={cn(
+                "flex items-center gap-1 rounded-full font-medium",
+                isNested ? "px-1.5 py-0 text-[9px]" : "px-2 py-0.5 text-xs"
+              )}
               style={{
                 backgroundColor: issue.dealer_paid ? "rgba(34, 197, 94, 0.12)" : "rgba(99, 102, 241, 0.12)",
                 color: issue.dealer_paid ? "rgb(34, 197, 94)" : "rgb(129, 140, 248)",
               }}
             >
-              <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-              <span className="truncate max-w-[120px]">{dealerName.split(" ")[0]}</span>
+              {!isNested && (
+                <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              )}
+              <span className={cn("truncate", isNested ? "max-w-[80px]" : "max-w-[120px]")}>{dealerName.split(" ")[0]}</span>
               {issue.dealer_paid && (
-                <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <svg className={cn("shrink-0", isNested ? "h-2 w-2" : "h-3 w-3")} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               )}
@@ -352,6 +358,7 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
               quickActions={quickActions}
               isReadOnly={!canEditIssueProperties}
               isEpic={isEpic}
+              isNested={isNested}
             />
             {/* Show parent issue reference for standalone sub-issues (not nested) */}
             {!isNested && issue.parent_id && (
