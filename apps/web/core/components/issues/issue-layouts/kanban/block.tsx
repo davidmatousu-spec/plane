@@ -351,6 +351,18 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
               isReadOnly={!canEditIssueProperties}
               isEpic={isEpic}
             />
+            {/* Show parent issue reference for standalone sub-issues (not nested) */}
+            {!isNested && parentIssue && (
+              <div className="flex items-center gap-1 pt-1 text-[10px] text-custom-text-400 truncate">
+                <span>↑</span>
+                {parentIssue.project_id && (
+                  <span className="shrink-0 font-medium">
+                    {getProjectIdentifierById(parentIssue.project_id)}-{parentIssue.sequence_id}
+                  </span>
+                )}
+                <span className="truncate">{parentIssue.name}</span>
+              </div>
+            )}
           </RenderIfVisible>
         </ControlLink>
 
