@@ -1,5 +1,4 @@
 import type { MutableRefObject } from "react";
-import { useEffect, useState } from "react";
 import { observer } from "mobx-react";
 // plane imports
 import type { TIssue, IIssueDisplayProperties, IIssueMap } from "@plane/types";
@@ -37,14 +36,6 @@ export const KanbanIssueBlocksList = observer(function KanbanIssueBlocksList(pro
     scrollableContainerRef,
     isEpic = false,
   } = props;
-
-  // Force a re-render shortly after issueIds changes so that any
-  // parent_id values that arrive asynchronously are picked up.
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    const timer = setTimeout(() => setTick((t) => t + 1), 300);
-    return () => clearTimeout(timer);
-  }, [issueIds.length]);
 
   // Build parent→children map: for each issue in this column,
   // if it has a parent_id AND that parent is also in this same column,
