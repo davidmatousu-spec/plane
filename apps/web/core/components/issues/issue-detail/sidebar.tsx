@@ -94,7 +94,8 @@ const ALLOWED_USERS = [
   "tereza.plechackova@onixia-pasport.cz",  
   "adam.bosak@onixia.cz",
   "jan.pertl@onixia.cz",
-  "josef.sankot@onixia-pasport.cz"
+  "josef.sankot@onixia-pasport.cz",
+  "samuel.misik@onixia-pasport.cz"
 ];
 
 // Oprávnění pro Budget Complete (Vyčerpáno) - pouze vybraní uživatelé

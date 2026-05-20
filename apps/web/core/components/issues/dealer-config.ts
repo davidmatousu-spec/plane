@@ -5,6 +5,7 @@ export const DEALER_OPTIONS = [
   { value: "Adam Bosák", label: "Adam Bosák" },
   { value: "Josef Sankot", label: "Josef Sankot" },
   { value: "Jan Pertl", label: "Jan Pertl" },
+  { value: "Samuel Mišík", label: "Samuel Mišík" },
 ] as const;
 
 // All known dealer values (for quick lookup)
@@ -44,6 +45,23 @@ const DEALER_ALIASES: Record<string, string> = {
   "j. pertl": "Jan Pertl",
   "j.pertl": "Jan Pertl",
   "honza": "Jan Pertl",
+
+  // Samuel Mišík
+  "samuel": "Samuel Mišík",
+  "mišík": "Samuel Mišík",
+  "misik": "Samuel Mišík",
+  "misík": "Samuel Mišík",
+  "mišik": "Samuel Mišík",
+  "samuel mišík": "Samuel Mišík",
+  "samuel misik": "Samuel Mišík",
+  "samuel misík": "Samuel Mišík",
+  "samuel mišik": "Samuel Mišík",
+  "s. mišík": "Samuel Mišík",
+  "s.mišík": "Samuel Mišík",
+  "s. misik": "Samuel Mišík",
+  "s.misik": "Samuel Mišík",
+  "s. misík": "Samuel Mišík",
+  "s.misík": "Samuel Mišík",
 };
 
 /**
