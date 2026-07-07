@@ -137,7 +137,7 @@ export const IssueTitleInput = observer(function IssueTitleInput(props: IssueTit
     [setIsSubmitting]
   );
 
-  if (disabled) return <div className="text-20 font-medium whitespace-pre-line">{title}</div>;
+  if (disabled) return <div className={cn("text-20 font-medium whitespace-pre-line", className)}>{title}</div>;
 
   return (
     <div className="flex flex-col gap-1.5">

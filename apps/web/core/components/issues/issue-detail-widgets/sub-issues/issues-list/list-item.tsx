@@ -1,5 +1,5 @@
 import { observer } from "mobx-react";
-import { Link as Loader } from "lucide-react";
+import { Link as Loader, Star } from "lucide-react";
 import { useTranslation } from "@plane/i18n";
 import { LinkIcon, EditIcon, TrashIcon, CloseIcon, ChevronRightIcon } from "@plane/propel/icons";
 // plane imports
@@ -182,8 +182,18 @@ export const SubIssuesListItem = observer(function SubIssuesListItem(props: Prop
                   )}
                 </div>
               </WithDisplayPropertiesHOC>
+              {issue.firmly_ordered && (
+                <Star className="h-3.5 w-3.5 flex-shrink-0 text-green-500 fill-current" />
+              )}
               <Tooltip tooltipContent={issue.name} isMobile={isMobile}>
-                <span className="flex-1 w-0 truncate text-13 text-primary">{issue.name}</span>
+                <span
+                  className={cn(
+                    "flex-1 w-0 truncate text-13",
+                    issue.firmly_ordered ? "text-green-500" : "text-primary"
+                  )}
+                >
+                  {issue.name}
+                </span>
               </Tooltip>
 
               {/* Budget (restricted) */}

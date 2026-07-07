@@ -123,6 +123,7 @@ export const IssueMainContent = observer(function IssueMainContent(props: Props)
           issueOperations={issueOperations}
           disabled={isArchived || !isEditable}
           value={issue.name}
+          className={issue.firmly_ordered ? "text-green-500" : undefined}
           containerClassName="-ml-3"
         />
 

@@ -125,6 +125,7 @@ def issue_on_results(
         "state__group",
         "dealer",
         "dealer_paid",
+        "firmly_ordered",
     ]
 
     if group_by in FIELD_MAPPER:

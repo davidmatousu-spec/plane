@@ -5,7 +5,7 @@ import { draggable, dropTargetForElements } from "@atlaskit/pragmatic-drag-and-d
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // plane helpers
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Star } from "lucide-react";
 import { useOutsideClickDetector } from "@plane/hooks";
 // types
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
@@ -124,7 +124,15 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
       </div>
 
       <Tooltip tooltipContent={issue.name} isMobile={isMobile} renderByDefault={false}>
-        <div className="w-full line-clamp-1 text-body-sm-medium text-primary">
+        <div
+          className={cn(
+            "w-full line-clamp-1 text-body-sm-medium",
+            issue.firmly_ordered ? "text-green-500" : "text-primary"
+          )}
+        >
+          {issue.firmly_ordered && (
+            <Star className="inline-block h-3.5 w-3.5 mr-1 -mt-0.5 shrink-0 text-green-500 fill-current" />
+          )}
           <span>{issue.name}</span>
         </div>
       </Tooltip>

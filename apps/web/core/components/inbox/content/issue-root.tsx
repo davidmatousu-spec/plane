@@ -156,6 +156,7 @@ export const InboxIssueMainContent = observer(function InboxIssueMainContent(pro
           issueOperations={issueOperations}
           disabled={!isEditable}
           value={issue.name}
+          className={issue.firmly_ordered ? "text-green-500" : undefined}
           containerClassName="-ml-3"
         />
 

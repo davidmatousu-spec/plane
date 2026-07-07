@@ -84,6 +84,23 @@ const DealerPropertyIcon = (props: any) => (
   </svg>
 );
 
+// Ikonka hvězdičky pro "Závazně objednáno"
+const FirmlyOrderedPropertyIcon = (props: any) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={cn("size-3.5", props.className)}
+    {...props}
+  >
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  </svg>
+);
+
 
 
 // --- KONFIGURACE OPRÁVNĚNÍ ---
@@ -284,6 +301,9 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
     (email) => email.toLowerCase() === currentUserEmail
   );
 
+  // "Závazně objednáno" - viditelné pro všechny
+  const showFirmlyOrdered = true;
+
   const handleDealerChange = async (val: string) => {
     if (val === (issue?.dealer ?? "")) return;
     try {
@@ -386,7 +406,38 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
             </div>
           </SidebarPropertyListItem>
         )}
-        
+
+        {/* --- FIRMLY ORDERED / ZÁVAZNĚ OBJEDNÁNO --- */}
+        {showFirmlyOrdered && (
+          <SidebarPropertyListItem
+            icon={FirmlyOrderedPropertyIcon}
+            label="Závazně obj."
+          >
+            <div className="flex items-center w-full h-7.5 px-1.5">
+              <label className="flex items-center gap-2 cursor-pointer text-body-xs-regular">
+                <input
+                  type="checkbox"
+                  checked={!!issue?.firmly_ordered}
+                  onChange={async (e) => {
+                    try {
+                      await issueOperations.update(workspaceSlug, projectId, issueId, {
+                        firmly_ordered: e.target.checked,
+                      });
+                    } catch (error) {
+                      console.error(error);
+                    }
+                  }}
+                  disabled={disabled}
+                  className="h-4 w-4 rounded border-custom-border-300 text-custom-primary-100 focus:ring-custom-primary-100 cursor-pointer"
+                />
+                <span className={issue?.firmly_ordered ? "text-green-500" : "text-custom-text-400"}>
+                  {issue?.firmly_ordered ? "Ano" : "Ne"}
+                </span>
+              </label>
+            </div>
+          </SidebarPropertyListItem>
+        )}
+
         <SidebarPropertyListItem icon={StatePropertyIcon} label={t("common.state")}>
           <StateDropdown
             value={issue?.state_id}

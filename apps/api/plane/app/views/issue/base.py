@@ -186,6 +186,7 @@ class IssueListEndpoint(BaseAPIView):
                 "deleted_at",
                 "dealer",
                 "dealer_paid",
+                "firmly_ordered",
             )
             datetime_fields = ["created_at", "updated_at"]
             issues = user_timezone_converter(issues, datetime_fields, request.user.user_timezone)
@@ -480,6 +481,7 @@ class IssueViewSet(BaseViewSet):
                     "deleted_at",
                     "dealer",
                     "dealer_paid",
+                    "firmly_ordered",
                 )
                 .first()
             )

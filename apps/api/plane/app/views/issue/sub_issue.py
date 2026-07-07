@@ -141,6 +141,7 @@ class SubIssuesEndpoint(BaseAPIView):
             "budget_complete",
             "dealer",
             "dealer_paid",
+            "firmly_ordered",
         )
         datetime_fields = ["created_at", "updated_at"]
         sub_issues = user_timezone_converter(sub_issues, datetime_fields, request.user.user_timezone)

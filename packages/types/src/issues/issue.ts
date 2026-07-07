@@ -48,8 +48,9 @@ export type TBaseIssue = {
   budget: number | null;
   budget_complete: number | null;
   contact_person: string | null;
-  dealer: string | null; 
+  dealer: string | null;
   dealer_paid: boolean;
+  firmly_ordered: boolean;
   assignee_ids: string[];
   estimate_point: string | null;
 

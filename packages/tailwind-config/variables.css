@@ -683,6 +683,8 @@
 
 /* -------------------- Semantic colors (Final colors to be used in components) -------------------- */
 @theme inline {
+  /* Palette green used by custom fields (dealer_paid, firmly_ordered) */
+  --color-green-500: var(--green-500);
   /* ---------- Outline width ---------- */
   --outline-width-sm: var(--border-width-sm);
   --outline-width-md: var(--border-width-md);

@@ -66,6 +66,7 @@ class IssueSerializer(BaseSerializer):
     contact_person = serializers.CharField(required=False, allow_null=True)
     dealer = serializers.CharField(required=False, allow_null=True)
     dealer_paid = serializers.BooleanField(required=False, default=False)
+    firmly_ordered = serializers.BooleanField(required=False, default=False)
 
     class Meta:
         model = Issue
@@ -639,6 +640,7 @@ class IssueExpandSerializer(BaseSerializer):
     contact_person = serializers.CharField(required=False, allow_null=True)
     dealer = serializers.CharField(required=False, allow_null=True)
     dealer_paid = serializers.BooleanField(required=False, default=False)
+    firmly_ordered = serializers.BooleanField(required=False, default=False)
     labels = serializers.SerializerMethodField()
     assignees = serializers.SerializerMethodField()
     state = StateLiteSerializer(read_only=True)
@@ -707,3 +709,4 @@ class IssueSearchSerializer(serializers.Serializer):
     contact_person = serializers.CharField(required=False, allow_null=True, help_text="Contact Person Name")
     dealer = serializers.CharField(required=False, allow_null=True, help_text="Dealer Name")
     dealer_paid = serializers.BooleanField(required=False, default=False, help_text="Dealer Paid")
+    firmly_ordered = serializers.BooleanField(required=False, default=False, help_text="Firmly Ordered")

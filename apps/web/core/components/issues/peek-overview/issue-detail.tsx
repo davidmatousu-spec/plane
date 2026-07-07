@@ -123,6 +123,7 @@ export const PeekOverviewIssueDetails = observer(function PeekOverviewIssueDetai
         issueOperations={issueOperations}
         disabled={disabled || isArchived}
         value={issue.name}
+        className={issue.firmly_ordered ? "text-green-500" : undefined}
         containerClassName="-ml-3"
       />
 

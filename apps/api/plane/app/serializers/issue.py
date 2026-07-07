@@ -66,6 +66,7 @@ class IssueFlatSerializer(BaseSerializer):
             "contact_person",
             "dealer",
             "dealer_paid",
+            "firmly_ordered",
         ]
 
 
@@ -805,6 +806,7 @@ class IssueSerializer(DynamicBaseSerializer):
             "contact_person",
             "dealer",
             "dealer_paid",
+            "firmly_ordered",
         ]
         read_only_fields = fields
 
@@ -868,6 +870,7 @@ class IssueListDetailSerializer(serializers.Serializer):
             "contact_person": instance.contact_person,
             "dealer": instance.dealer,
             "dealer_paid": instance.dealer_paid,
+            "firmly_ordered": instance.firmly_ordered,
             
         }
 
