@@ -70,6 +70,7 @@ from plane.utils.host import base_host
 from plane.utils.issue_filters import issue_filters
 from plane.utils.order_queryset import order_issue_queryset
 from plane.utils.paginator import GroupedOffsetPaginator, SubGroupedOffsetPaginator
+from plane.utils.state_restrictions import filter_issues_for_user
 from plane.utils.timezone_converter import user_timezone_converter
 
 from .. import BaseAPIView, BaseViewSet
@@ -89,7 +90,10 @@ class IssueListEndpoint(BaseAPIView):
         issue_ids = [issue_id for issue_id in issue_ids.split(",") if issue_id != ""]
 
         # Base queryset with basic filters
-        queryset = Issue.issue_objects.filter(workspace__slug=slug, project_id=project_id, pk__in=issue_ids)
+        queryset = filter_issues_for_user(
+            Issue.issue_objects.filter(workspace__slug=slug, project_id=project_id, pk__in=issue_ids),
+            request.user,
+        )
 
         # Apply filtering from filterset
         queryset = self.filter_queryset(queryset)
@@ -209,7 +213,7 @@ class IssueViewSet(BaseViewSet):
             workspace__slug=self.kwargs.get("slug"),
         ).distinct()
 
-        return issues
+        return filter_issues_for_user(issues, self.request.user)
 
 
     def filter_queryset(self, queryset):
@@ -360,6 +364,7 @@ class IssueViewSet(BaseViewSet):
                             project_id=project_id,
                             filters=filters,
                             queryset=filtered_issue_queryset,
+                            user=request.user,
                         ),
                         sub_group_by_fields=issue_group_values(
                             field=sub_group_by,
@@ -367,6 +372,7 @@ class IssueViewSet(BaseViewSet):
                             project_id=project_id,
                             filters=filters,
                             queryset=filtered_issue_queryset,
+                            user=request.user,
                         ),
                         group_by_field_name=group_by,
                         sub_group_by_field_name=sub_group_by,
@@ -396,6 +402,7 @@ class IssueViewSet(BaseViewSet):
                         project_id=project_id,
                         filters=filters,
                         queryset=filtered_issue_queryset,
+                        user=request.user,
                     ),
                     group_by_field_name=group_by,
                     count_filter=Q(
@@ -426,6 +433,7 @@ class IssueViewSet(BaseViewSet):
                 "project_id": project_id,
                 "workspace_id": project.workspace_id,
                 "default_assignee_id": project.default_assignee_id,
+                "user": request.user,
             },
         )
 
@@ -512,10 +520,13 @@ class IssueViewSet(BaseViewSet):
         project = Project.objects.get(pk=project_id, workspace__slug=slug)
 
         issue = (
-            Issue.objects.filter(
-                project_id=self.kwargs.get("project_id"),
-                workspace__slug=self.kwargs.get("slug"),
-                pk=pk,
+            filter_issues_for_user(
+                Issue.objects.filter(
+                    project_id=self.kwargs.get("project_id"),
+                    workspace__slug=self.kwargs.get("slug"),
+                    pk=pk,
+                ),
+                request.user,
             )
             .select_related("state")
             .annotate(cycle_id=Subquery(CycleIssue.objects.filter(issue=OuterRef("id")).values("cycle_id")[:1]))
@@ -695,7 +706,9 @@ class IssueViewSet(BaseViewSet):
         current_instance = json.dumps(IssueDetailSerializer(issue).data, cls=DjangoJSONEncoder)
 
         requested_data = json.dumps(self.request.data, cls=DjangoJSONEncoder)
-        serializer = IssueCreateSerializer(issue, data=request.data, partial=True, context={"project_id": project_id})
+        serializer = IssueCreateSerializer(
+            issue, data=request.data, partial=True, context={"project_id": project_id, "user": request.user}
+        )
         if serializer.is_valid():
             serializer.save()
             # Check if the update is a migration description update
@@ -836,7 +849,10 @@ class IssuePaginatedViewSet(BaseViewSet):
         workspace_slug = self.kwargs.get("slug")
         project_id = self.kwargs.get("project_id")
 
-        issue_queryset = Issue.issue_objects.filter(workspace__slug=workspace_slug, project_id=project_id)
+        issue_queryset = filter_issues_for_user(
+            Issue.issue_objects.filter(workspace__slug=workspace_slug, project_id=project_id),
+            self.request.user,
+        )
 
         return (
             issue_queryset.select_related("state")
@@ -919,7 +935,10 @@ class IssuePaginatedViewSet(BaseViewSet):
             required_fields.append("description_html")
 
         # querying issues
-        base_queryset = Issue.issue_objects.filter(workspace__slug=slug, project_id=project_id)
+        base_queryset = filter_issues_for_user(
+            Issue.issue_objects.filter(workspace__slug=slug, project_id=project_id),
+            request.user,
+        )
 
         base_queryset = base_queryset.order_by("updated_at")
         queryset = self.get_queryset().order_by("updated_at")
@@ -1073,8 +1092,11 @@ class IssueDetailEndpoint(BaseAPIView):
             .values("id")
         )
         # Main issue query
-        issue = Issue.issue_objects.filter(workspace__slug=slug, project_id=project_id).filter(
-            Exists(permission_subquery)
+        issue = filter_issues_for_user(
+            Issue.issue_objects.filter(workspace__slug=slug, project_id=project_id).filter(
+                Exists(permission_subquery)
+            ),
+            request.user,
         )
 
         # Add additional prefetch based on expand parameter
@@ -1204,8 +1226,10 @@ class IssueBulkUpdateDateEndpoint(BaseAPIView):
 class IssueMetaEndpoint(BaseAPIView):
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST], level="PROJECT")
     def get(self, request, slug, project_id, issue_id):
-        issue = Issue.issue_objects.only("sequence_id", "project__identifier").get(
-            id=issue_id, project_id=project_id, workspace__slug=slug
+        issue = (
+            filter_issues_for_user(Issue.issue_objects, request.user)
+            .only("sequence_id", "project__identifier")
+            .get(id=issue_id, project_id=project_id, workspace__slug=slug)
         )
         return Response(
             {
@@ -1249,7 +1273,7 @@ class IssueDetailIdentifierEndpoint(BaseAPIView):
 
         # Fetch the issue
         issue = (
-            Issue.objects.filter(project_id=project.id)
+            filter_issues_for_user(Issue.objects.filter(project_id=project.id), request.user)
             .filter(workspace__slug=slug)
             .select_related("workspace", "project", "state", "parent")
             .prefetch_related("assignees", "labels", "issue_module__module")

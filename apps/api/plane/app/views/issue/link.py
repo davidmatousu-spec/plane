@@ -17,6 +17,7 @@ from plane.db.models import IssueLink
 from plane.bgtasks.issue_activities_task import issue_activity
 from plane.bgtasks.work_item_link_task import crawl_work_item_link_title
 from plane.utils.host import base_host
+from plane.utils.state_restrictions import get_allowed_state_ids
 
 
 class IssueLinkViewSet(BaseViewSet):
@@ -26,9 +27,13 @@ class IssueLinkViewSet(BaseViewSet):
     serializer_class = IssueLinkSerializer
 
     def get_queryset(self):
+        queryset = super().get_queryset()
+        # State-restricted users may only read links of issues they can see
+        allowed_state_ids = get_allowed_state_ids(self.request.user)
+        if allowed_state_ids is not None:
+            queryset = queryset.filter(issue__state_id__in=allowed_state_ids)
         return (
-            super()
-            .get_queryset()
+            queryset
             .filter(workspace__slug=self.kwargs.get("slug"))
             .filter(project_id=self.kwargs.get("project_id"))
             .filter(issue_id=self.kwargs.get("issue_id"))

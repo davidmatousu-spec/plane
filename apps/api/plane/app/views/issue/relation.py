@@ -28,6 +28,7 @@ from plane.db.models import (
 from plane.bgtasks.issue_activities_task import issue_activity
 from plane.utils.issue_relation_mapper import get_actual_relation
 from plane.utils.host import base_host
+from plane.utils.state_restrictions import filter_issues_for_user
 
 
 class IssueRelationViewSet(BaseViewSet):
@@ -96,7 +97,7 @@ class IssueRelationViewSet(BaseViewSet):
         )
 
         queryset = (
-            Issue.issue_objects.filter(workspace__slug=slug)
+            filter_issues_for_user(Issue.issue_objects.filter(workspace__slug=slug), request.user)
             .select_related("workspace", "project", "state", "parent")
             .prefetch_related("assignees", "labels", "issue_module__module")
             .annotate(

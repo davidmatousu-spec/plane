@@ -20,6 +20,8 @@ from plane.db.models import (
 )
 from typing import Optional, Dict, Tuple, Any, Union, List
 
+from plane.utils.state_restrictions import filter_states_for_user
+
 
 def issue_queryset_grouper(
     queryset: QuerySet[Issue],
@@ -146,9 +148,12 @@ def issue_group_values(
     project_id: Optional[str] = None,
     filters: Dict[str, Any] = {},
     queryset: Optional[QuerySet] = None,
+    user=None,
 ) -> List[Union[str, Any]]:
     if field == "state_id":
-        queryset = State.objects.filter(is_triage=False, workspace__slug=slug).values_list("id", flat=True)
+        queryset = filter_states_for_user(
+            State.objects.filter(is_triage=False, workspace__slug=slug), user
+        ).values_list("id", flat=True)
         if project_id:
             return list(queryset.filter(project_id=project_id))
         return list(queryset)

@@ -7,6 +7,7 @@ from plane.app.serializers import StateSerializer
 from plane.app.views.base import BaseAPIView
 from plane.db.models import State
 from plane.app.permissions import WorkspaceEntityPermission
+from plane.utils.state_restrictions import filter_states_for_user
 from collections import defaultdict
 
 
@@ -15,12 +16,15 @@ class WorkspaceStatesEndpoint(BaseAPIView):
     use_read_replica = True
 
     def get(self, request, slug):
-        states = State.objects.filter(
-            workspace__slug=slug,
-            project__project_projectmember__member=request.user,
-            project__project_projectmember__is_active=True,
-            project__archived_at__isnull=True,
-            is_triage=False,
+        states = filter_states_for_user(
+            State.objects.filter(
+                workspace__slug=slug,
+                project__project_projectmember__member=request.user,
+                project__project_projectmember__is_active=True,
+                project__archived_at__isnull=True,
+                is_triage=False,
+            ),
+            request.user,
         )
 
         grouped_states = defaultdict(list)

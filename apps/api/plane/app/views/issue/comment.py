@@ -18,6 +18,7 @@ from plane.app.permissions import allow_permission, ROLE
 from plane.db.models import IssueComment, ProjectMember, CommentReaction, Project, Issue
 from plane.bgtasks.issue_activities_task import issue_activity
 from plane.utils.host import base_host
+from plane.utils.state_restrictions import filter_issues_for_user, get_allowed_state_ids
 from plane.bgtasks.webhook_task import model_activity
 
 
@@ -29,9 +30,13 @@ class IssueCommentViewSet(BaseViewSet):
     filterset_fields = ["issue__id", "workspace__id"]
 
     def get_queryset(self):
+        queryset = super().get_queryset()
+        # State-restricted users may only read comments of issues they can see
+        allowed_state_ids = get_allowed_state_ids(self.request.user)
+        if allowed_state_ids is not None:
+            queryset = queryset.filter(issue__state_id__in=allowed_state_ids)
         return self.filter_queryset(
-            super()
-            .get_queryset()
+            queryset
             .filter(workspace__slug=self.kwargs.get("slug"))
             .filter(project_id=self.kwargs.get("project_id"))
             .filter(issue_id=self.kwargs.get("issue_id"))
@@ -58,6 +63,10 @@ class IssueCommentViewSet(BaseViewSet):
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST])
     def create(self, request, slug, project_id, issue_id):
+        # State-restricted users may only comment on issues they can see
+        if get_allowed_state_ids(request.user) is not None:
+            if not filter_issues_for_user(Issue.objects.filter(pk=issue_id), request.user).exists():
+                return Response({"error": "Issue not found"}, status=status.HTTP_404_NOT_FOUND)
         project = Project.objects.get(pk=project_id)
         issue = Issue.objects.get(pk=issue_id)
         if (

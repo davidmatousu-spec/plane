@@ -25,6 +25,7 @@ from rest_framework.response import Response
 
 # Module imports
 from plane.app.views.base import BaseAPIView
+from plane.utils.state_restrictions import filter_issues_for_user
 from plane.db.models import (
     Workspace,
     Project,
@@ -98,11 +99,14 @@ class GlobalSearchEndpoint(BaseAPIView):
         # --- DEBUG END ---
 
         # 1. KROK: Základní queryset, který má VŠECHNY issues, ke kterým máš přístup
-        base_issues = Issue.issue_objects.filter(
-            project__project_projectmember__member=self.request.user,
-            project__project_projectmember__is_active=True,
-            project__archived_at__isnull=True,
-            workspace__slug=slug,
+        base_issues = filter_issues_for_user(
+            Issue.issue_objects.filter(
+                project__project_projectmember__member=self.request.user,
+                project__project_projectmember__is_active=True,
+                project__archived_at__isnull=True,
+                workspace__slug=slug,
+            ),
+            self.request.user,
         )
         print(f"DEBUG KROK 1: Počet issues PŘED hledáním: {base_issues.count()}", file=sys.stderr)
 
@@ -257,12 +261,15 @@ class GlobalSearchEndpoint(BaseAPIView):
                 else:
                     q |= Q(**{f"{field}__icontains": query})
 
-        issues = Issue.objects.filter(
-            q,
-            project__project_projectmember__member=self.request.user,
-            project__project_projectmember__is_active=True,
-            project__archived_at__isnull=True,
-            workspace__slug=slug,
+        issues = filter_issues_for_user(
+            Issue.objects.filter(
+                q,
+                project__project_projectmember__member=self.request.user,
+                project__project_projectmember__is_active=True,
+                project__archived_at__isnull=True,
+                workspace__slug=slug,
+            ),
+            self.request.user,
         ).filter(models.Q(issue_intake__status=0) | models.Q(issue_intake__status=-2))
 
         if workspace_search == "false" and project_id:
@@ -409,12 +416,15 @@ class SearchEndpoint(BaseAPIView):
                                 q |= Q(**{f"{field}__icontains": query})
 
                     issues = (
-                        Issue.issue_objects.filter(
-                            q,
-                            project__project_projectmember__member=self.request.user,
-                            project__project_projectmember__is_active=True,
-                            workspace__slug=slug,
-                            project_id=project_id,
+                        filter_issues_for_user(
+                            Issue.issue_objects.filter(
+                                q,
+                                project__project_projectmember__member=self.request.user,
+                                project__project_projectmember__is_active=True,
+                                workspace__slug=slug,
+                                project_id=project_id,
+                            ),
+                            self.request.user,
                         )
                         .order_by("-created_at")
                         .distinct()
@@ -616,11 +626,14 @@ class SearchEndpoint(BaseAPIView):
                                 q |= Q(**{f"{field}__icontains": query})
 
                     issues = (
-                        Issue.issue_objects.filter(
-                            q,
-                            project__project_projectmember__member=self.request.user,
-                            project__project_projectmember__is_active=True,
-                            workspace__slug=slug,
+                        filter_issues_for_user(
+                            Issue.issue_objects.filter(
+                                q,
+                                project__project_projectmember__member=self.request.user,
+                                project__project_projectmember__is_active=True,
+                                workspace__slug=slug,
+                            ),
+                            self.request.user,
                         )
                         .order_by("-created_at")
                         .distinct()

@@ -43,6 +43,7 @@ from plane.utils.content_validator import (
     validate_html_content,
     validate_binary_data,
 )
+from plane.utils.state_restrictions import is_state_allowed_for_user
 
 
 class IssueFlatSerializer(BaseSerializer):
@@ -174,6 +175,10 @@ class IssueCreateSerializer(BaseSerializer):
                 pk=attrs.get("state").id,
             ).exists()
         ):
+            raise serializers.ValidationError("State is not valid please pass a valid state_id")
+
+        # State-restricted users may only use states from their allowlist
+        if attrs.get("state") and not is_state_allowed_for_user(self.context.get("user"), attrs.get("state").id):
             raise serializers.ValidationError("State is not valid please pass a valid state_id")
 
         # Check parent issue is from workspace as it can be cross workspace

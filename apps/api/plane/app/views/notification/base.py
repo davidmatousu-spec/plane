@@ -19,6 +19,7 @@ from plane.db.models import (
     WorkspaceMember,
 )
 from plane.utils.paginator import BasePaginator
+from plane.utils.state_restrictions import get_allowed_state_ids
 from plane.app.permissions import allow_permission, ROLE
 
 # Module imports
@@ -71,6 +72,14 @@ class NotificationViewSet(BaseViewSet, BasePaginator):
             .select_related("workspace", "project", "triggered_by", "receiver")
             .order_by("snoozed_till", "-created_at")
         )
+
+        # State-restricted users only get notifications for issues they can see
+        allowed_state_ids = get_allowed_state_ids(request.user)
+        if allowed_state_ids is not None:
+            visible_issue = Issue.objects.filter(
+                pk=OuterRef("entity_identifier"), state_id__in=allowed_state_ids
+            )
+            notifications = notifications.filter(Exists(visible_issue))
 
         # Filters based on query parameters
         snoozed_filters = {
@@ -194,9 +203,19 @@ class UnreadNotificationEndpoint(BaseAPIView):
 
     @allow_permission(allowed_roles=[ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST], level="WORKSPACE")
     def get(self, request, slug):
+        # State-restricted users: only count notifications for issues they can see
+        allowed_state_ids = get_allowed_state_ids(request.user)
+        restriction_filter = Q()
+        if allowed_state_ids is not None:
+            visible_issue = Issue.objects.filter(
+                pk=OuterRef("entity_identifier"), state_id__in=allowed_state_ids
+            )
+            restriction_filter = ~Q(entity_name="issue") | Q(Exists(visible_issue))
+
         # Watching Issues Count
         unread_notifications_count = (
             Notification.objects.filter(
+                restriction_filter,
                 workspace__slug=slug,
                 receiver_id=request.user.id,
                 read_at__isnull=True,
@@ -208,6 +227,7 @@ class UnreadNotificationEndpoint(BaseAPIView):
         )
 
         mention_notifications_count = Notification.objects.filter(
+            restriction_filter,
             workspace__slug=slug,
             receiver_id=request.user.id,
             read_at__isnull=True,

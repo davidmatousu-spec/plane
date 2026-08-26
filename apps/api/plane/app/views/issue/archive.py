@@ -44,6 +44,7 @@ from plane.utils.host import base_host
 from .. import BaseViewSet, BaseAPIView
 from plane.utils.filters import ComplexFilterBackend
 from plane.utils.filters import IssueFilterSet
+from plane.utils.state_restrictions import filter_issues_for_user
 
 
 class IssueArchiveViewSet(BaseViewSet):
@@ -91,11 +92,12 @@ class IssueArchiveViewSet(BaseViewSet):
         )
 
     def get_queryset(self):
-        return (
+        return filter_issues_for_user(
             Issue.objects.filter(Q(type__isnull=True) | Q(type__is_epic=False))
             .filter(archived_at__isnull=False)
             .filter(project_id=self.kwargs.get("project_id"))
-            .filter(workspace__slug=self.kwargs.get("slug"))
+            .filter(workspace__slug=self.kwargs.get("slug")),
+            self.request.user,
         )
 
     @method_decorator(gzip_page)
@@ -157,12 +159,14 @@ class IssueArchiveViewSet(BaseViewSet):
                             slug=slug,
                             project_id=project_id,
                             filters=filters,
+                            user=request.user,
                         ),
                         sub_group_by_fields=issue_group_values(
                             field=sub_group_by,
                             slug=slug,
                             project_id=project_id,
                             filters=filters,
+                            user=request.user,
                         ),
                         group_by_field_name=group_by,
                         sub_group_by_field_name=sub_group_by,
@@ -192,6 +196,7 @@ class IssueArchiveViewSet(BaseViewSet):
                         slug=slug,
                         project_id=project_id,
                         filters=filters,
+                        user=request.user,
                     ),
                     group_by_field_name=group_by,
                     count_filter=Q(
@@ -308,9 +313,10 @@ class BulkArchiveIssuesEndpoint(BaseAPIView):
         if not len(issue_ids):
             return Response({"error": "Issue IDs are required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        issues = Issue.objects.filter(workspace__slug=slug, project_id=project_id, pk__in=issue_ids).select_related(
-            "state"
-        )
+        issues = filter_issues_for_user(
+            Issue.objects.filter(workspace__slug=slug, project_id=project_id, pk__in=issue_ids),
+            request.user,
+        ).select_related("state")
         bulk_archive_issues = []
         for issue in issues:
             if issue.state.group not in ["completed", "cancelled"]:

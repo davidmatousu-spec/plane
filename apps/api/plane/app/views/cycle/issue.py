@@ -31,6 +31,7 @@ from plane.app.permissions import allow_permission, ROLE
 from plane.utils.host import base_host
 from plane.utils.filters import ComplexFilterBackend
 from plane.utils.filters import IssueFilterSet
+from plane.utils.state_restrictions import filter_issues_for_user
 
 
 class CycleIssueViewSet(BaseViewSet):
@@ -105,10 +106,11 @@ class CycleIssueViewSet(BaseViewSet):
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
     def list(self, request, slug, project_id, cycle_id):
         filters = issue_filters(request.query_params, "GET")
-        issue_queryset = (
+        issue_queryset = filter_issues_for_user(
             Issue.issue_objects.filter(issue_cycle__cycle_id=cycle_id, issue_cycle__deleted_at__isnull=True)
             .filter(project_id=project_id)
-            .filter(workspace__slug=slug)
+            .filter(workspace__slug=slug),
+            request.user,
         )
 
         # Apply filtering from filterset
@@ -160,12 +162,14 @@ class CycleIssueViewSet(BaseViewSet):
                             slug=slug,
                             project_id=project_id,
                             filters=filters,
+                            user=request.user,
                         ),
                         sub_group_by_fields=issue_group_values(
                             field=sub_group_by,
                             slug=slug,
                             project_id=project_id,
                             filters=filters,
+                            user=request.user,
                         ),
                         group_by_field_name=group_by,
                         sub_group_by_field_name=sub_group_by,
@@ -195,6 +199,7 @@ class CycleIssueViewSet(BaseViewSet):
                         slug=slug,
                         project_id=project_id,
                         filters=filters,
+                        user=request.user,
                     ),
                     group_by_field_name=group_by,
                     count_filter=Q(

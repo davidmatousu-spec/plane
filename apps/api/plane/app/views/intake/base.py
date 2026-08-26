@@ -40,6 +40,7 @@ from plane.app.serializers import (
     IssueDescriptionVersionDetailSerializer,
 )
 from plane.utils.issue_filters import issue_filters
+from plane.utils.state_restrictions import get_allowed_state_ids
 from plane.bgtasks.issue_activities_task import issue_activity
 from plane.bgtasks.issue_description_version_task import issue_description_version_task
 from plane.app.views.base import BaseAPIView
@@ -171,6 +172,9 @@ class IntakeIssueViewSet(BaseViewSet):
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST])
     def list(self, request, slug, project_id):
+        # Intake issues live in the triage state - hidden from state-restricted users
+        if get_allowed_state_ids(request.user) is not None:
+            return Response({"error": "Intake not found"}, status=status.HTTP_404_NOT_FOUND)
         intake = Intake.objects.filter(workspace__slug=slug, project_id=project_id).first()
         if not intake:
             return Response({"error": "Intake not found"}, status=status.HTTP_404_NOT_FOUND)
@@ -493,6 +497,9 @@ class IntakeIssueViewSet(BaseViewSet):
 
     @allow_permission(allowed_roles=[ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST], creator=True, model=Issue)
     def retrieve(self, request, slug, project_id, pk):
+        # Intake issues live in the triage state - hidden from state-restricted users
+        if get_allowed_state_ids(request.user) is not None:
+            return Response({"error": "Intake issue not found"}, status=status.HTTP_404_NOT_FOUND)
         intake_id = Intake.objects.filter(workspace__slug=slug, project_id=project_id).first()
         project = Project.objects.get(pk=project_id)
         intake_issue = (

@@ -17,6 +17,7 @@ from plane.app.serializers import (
 )
 from plane.app.permissions import allow_permission, ROLE
 from plane.utils.global_paginator import paginate
+from plane.utils.state_restrictions import filter_issues_for_user, get_allowed_state_ids
 from plane.utils.timezone_converter import user_timezone_converter
 
 
@@ -31,6 +32,10 @@ class IssueVersionEndpoint(BaseAPIView):
 
     @allow_permission(allowed_roles=[ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST])
     def get(self, request, slug, project_id, issue_id, pk=None):
+        # State-restricted users may only read versions of issues they can see
+        if get_allowed_state_ids(request.user) is not None:
+            if not filter_issues_for_user(Issue.objects.filter(pk=issue_id), request.user).exists():
+                return Response({"error": "Issue not found"}, status=status.HTTP_404_NOT_FOUND)
         if pk:
             issue_version = IssueVersion.objects.get(
                 workspace__slug=slug, project_id=project_id, issue_id=issue_id, pk=pk
@@ -81,6 +86,10 @@ class WorkItemDescriptionVersionEndpoint(BaseAPIView):
 
     @allow_permission(allowed_roles=[ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST])
     def get(self, request, slug, project_id, work_item_id, pk=None):
+        # State-restricted users may only read versions of issues they can see
+        if get_allowed_state_ids(request.user) is not None:
+            if not filter_issues_for_user(Issue.objects.filter(pk=work_item_id), request.user).exists():
+                return Response({"error": "Issue not found"}, status=status.HTTP_404_NOT_FOUND)
         project = Project.objects.get(pk=project_id)
         issue = Issue.objects.get(workspace__slug=slug, project_id=project_id, pk=work_item_id)
 

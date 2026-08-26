@@ -8,6 +8,7 @@ from rest_framework.exceptions import AuthenticationFailed
 
 # Module imports
 from plane.db.models import APIToken
+from plane.utils.state_restrictions import get_allowed_state_ids
 
 
 class APIKeyAuthentication(authentication.BaseAuthentication):
@@ -30,6 +31,11 @@ class APIKeyAuthentication(authentication.BaseAuthentication):
                 is_active=True,
             )
         except APIToken.DoesNotExist:
+            raise AuthenticationFailed("Given API token is not valid")
+
+        # State-restricted users may not use the external API at all - the
+        # v1 endpoints bypass the per-state filtering applied in the app layer
+        if get_allowed_state_ids(api_token.user) is not None:
             raise AuthenticationFailed("Given API token is not valid")
 
         # save api token last used

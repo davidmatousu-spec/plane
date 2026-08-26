@@ -6,6 +6,7 @@ from plane.app.permissions import allow_permission, ROLE
 from plane.app.serializers import ExporterHistorySerializer
 from plane.bgtasks.export_task import issue_export_task
 from plane.db.models import ExporterHistory, Project, Workspace
+from plane.utils.state_restrictions import get_allowed_state_ids
 
 # Module imports
 from .. import BaseAPIView
@@ -17,6 +18,12 @@ class ExportIssuesEndpoint(BaseAPIView):
 
     @allow_permission(allowed_roles=[ROLE.ADMIN, ROLE.MEMBER], level="WORKSPACE")
     def post(self, request, slug):
+        # State-restricted users may not export issues (export would include hidden states)
+        if get_allowed_state_ids(request.user) is not None:
+            return Response(
+                {"error": "You are not allowed to export issues"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         # Get the workspace
         workspace = Workspace.objects.get(slug=slug)
 

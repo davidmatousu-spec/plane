@@ -15,6 +15,11 @@ from plane.app.serializers import StateSerializer
 from plane.app.permissions import ROLE, allow_permission
 from plane.db.models import State, Issue
 from plane.utils.cache import invalidate_cache
+from plane.utils.state_restrictions import (
+    filter_states_for_user,
+    get_allowed_state_ids,
+    is_state_allowed_for_user,
+)
 
 
 class StateViewSet(BaseViewSet):
@@ -23,19 +28,22 @@ class StateViewSet(BaseViewSet):
 
     def get_queryset(self):
         return self.filter_queryset(
-            super()
-            .get_queryset()
-            .filter(workspace__slug=self.kwargs.get("slug"))
-            .filter(project_id=self.kwargs.get("project_id"))
-            .filter(
-                project__project_projectmember__member=self.request.user,
-                project__project_projectmember__is_active=True,
-                project__archived_at__isnull=True,
+            filter_states_for_user(
+                super()
+                .get_queryset()
+                .filter(workspace__slug=self.kwargs.get("slug"))
+                .filter(project_id=self.kwargs.get("project_id"))
+                .filter(
+                    project__project_projectmember__member=self.request.user,
+                    project__project_projectmember__is_active=True,
+                    project__archived_at__isnull=True,
+                )
+                .filter(is_triage=False)
+                .select_related("project")
+                .select_related("workspace")
+                .distinct(),
+                self.request.user,
             )
-            .filter(is_triage=False)
-            .select_related("project")
-            .select_related("workspace")
-            .distinct()
         )
 
     @invalidate_cache(path="workspaces/:slug/states/", url_params=True, user=False)
@@ -56,6 +64,8 @@ class StateViewSet(BaseViewSet):
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST])
     def partial_update(self, request, slug, project_id, pk):
+        if not is_state_allowed_for_user(request.user, pk):
+            return Response({"error": "State does not exist"}, status=status.HTTP_404_NOT_FOUND)
         try:
             state = State.objects.get(pk=pk, project_id=project_id, workspace__slug=slug)
             serializer = StateSerializer(state, data=request.data, partial=True)
@@ -132,6 +142,12 @@ class StateViewSet(BaseViewSet):
 class IntakeStateEndpoint(BaseAPIView):
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST])
     def get(self, request, slug, project_id):
+        # The triage state is never in a restricted user's allowlist
+        if get_allowed_state_ids(request.user) is not None:
+            return Response(
+                {"error": "Triage state not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         state = State.triage_objects.filter(workspace__slug=slug, project_id=project_id).first()
         if not state:
             return Response(

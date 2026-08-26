@@ -14,7 +14,8 @@ from rest_framework import status
 from .. import BaseAPIView
 from plane.app.serializers import IssueActivitySerializer, IssueCommentSerializer
 from plane.app.permissions import ProjectEntityPermission, allow_permission, ROLE
-from plane.db.models import IssueActivity, IssueComment, CommentReaction, IntakeIssue
+from plane.db.models import Issue, IssueActivity, IssueComment, CommentReaction, IntakeIssue
+from plane.utils.state_restrictions import filter_issues_for_user, get_allowed_state_ids
 
 
 class IssueActivityEndpoint(BaseAPIView):
@@ -24,6 +25,11 @@ class IssueActivityEndpoint(BaseAPIView):
     @method_decorator(gzip_page)
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST])
     def get(self, request, slug, project_id, issue_id):
+        # State-restricted users may only read activity of issues they can see
+        if get_allowed_state_ids(request.user) is not None:
+            if not filter_issues_for_user(Issue.objects.filter(pk=issue_id), request.user).exists():
+                return Response({"error": "Issue not found"}, status=status.HTTP_404_NOT_FOUND)
+
         filters = {}
         if request.GET.get("created_at__gt", None) is not None:
             filters = {"created_at__gt": request.GET.get("created_at__gt")}

@@ -24,6 +24,7 @@ from plane.utils.timezone_converter import user_timezone_converter
 from collections import defaultdict
 from plane.utils.host import base_host
 from plane.utils.order_queryset import order_issue_queryset
+from plane.utils.state_restrictions import filter_issues_for_user
 
 
 class SubIssuesEndpoint(BaseAPIView):
@@ -32,7 +33,10 @@ class SubIssuesEndpoint(BaseAPIView):
     @method_decorator(gzip_page)
     def get(self, request, slug, project_id, issue_id):
         sub_issues = (
-            Issue.issue_objects.filter(parent_id=issue_id, workspace__slug=slug)
+            filter_issues_for_user(
+                Issue.issue_objects.filter(parent_id=issue_id, workspace__slug=slug),
+                request.user,
+            )
             .select_related("workspace", "project", "state", "parent")
             .prefetch_related("assignees", "labels", "issue_module__module")
             .annotate(
@@ -181,14 +185,16 @@ class SubIssuesEndpoint(BaseAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        sub_issues = Issue.issue_objects.filter(id__in=sub_issue_ids)
+        sub_issues = filter_issues_for_user(Issue.issue_objects.filter(id__in=sub_issue_ids), request.user)
 
         for sub_issue in sub_issues:
             sub_issue.parent = parent_issue
 
         _ = Issue.objects.bulk_update(sub_issues, ["parent"], batch_size=10)
 
-        updated_sub_issues = Issue.issue_objects.filter(id__in=sub_issue_ids).annotate(state_group=F("state__group"))
+        updated_sub_issues = filter_issues_for_user(
+            Issue.issue_objects.filter(id__in=sub_issue_ids), request.user
+        ).annotate(state_group=F("state__group"))
 
         # Track the issue
         _ = [

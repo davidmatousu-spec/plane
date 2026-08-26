@@ -40,6 +40,7 @@ from plane.db.models import (
 )
 from plane.app.permissions import ROLE, allow_permission
 from plane.utils.constants import RESTRICTED_WORKSPACE_SLUGS
+from plane.utils.state_restrictions import filter_issues_for_user, get_allowed_state_ids
 from plane.license.utils.instance_value import get_configuration_value
 from plane.bgtasks.workspace_seed_task import workspace_seed
 from plane.bgtasks.event_tracking_task import track_event
@@ -309,20 +310,26 @@ class UserWorkspaceDashboardEndpoint(BaseAPIView):
             .order_by("state_group")
         )
 
-        overdue_issues = Issue.issue_objects.filter(
-            ~Q(state__group__in=["completed", "cancelled"]),
-            workspace__slug=slug,
-            assignees__in=[request.user],
-            target_date__lt=timezone.now(),
-            completed_at__isnull=True,
+        overdue_issues = filter_issues_for_user(
+            Issue.issue_objects.filter(
+                ~Q(state__group__in=["completed", "cancelled"]),
+                workspace__slug=slug,
+                assignees__in=[request.user],
+                target_date__lt=timezone.now(),
+                completed_at__isnull=True,
+            ),
+            request.user,
         ).values("id", "name", "workspace__slug", "project_id", "target_date")
 
-        upcoming_issues = Issue.issue_objects.filter(
-            ~Q(state__group__in=["completed", "cancelled"]),
-            start_date__gte=timezone.now(),
-            workspace__slug=slug,
-            assignees__in=[request.user],
-            completed_at__isnull=True,
+        upcoming_issues = filter_issues_for_user(
+            Issue.issue_objects.filter(
+                ~Q(state__group__in=["completed", "cancelled"]),
+                start_date__gte=timezone.now(),
+                workspace__slug=slug,
+                assignees__in=[request.user],
+                completed_at__isnull=True,
+            ),
+            request.user,
         ).values("id", "name", "workspace__slug", "project_id", "start_date")
 
         return Response(
@@ -380,7 +387,14 @@ class ExportWorkspaceUserActivityEndpoint(BaseAPIView):
             project__project_projectmember__member=request.user,
             project__project_projectmember__is_active=True,
             actor_id=user_id,
-        ).select_related("actor", "workspace", "issue", "project")[:10000]
+        ).select_related("actor", "workspace", "issue", "project")
+
+        # State-restricted users only get activity of issues they can see
+        allowed_state_ids = get_allowed_state_ids(request.user)
+        if allowed_state_ids is not None:
+            user_activities = user_activities.filter(issue__state_id__in=allowed_state_ids)
+
+        user_activities = user_activities[:10000]
 
         header = [
             "Actor name",

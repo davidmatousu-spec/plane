@@ -22,6 +22,7 @@ from plane.app.permissions import allow_permission, ROLE
 from plane.settings.storage import S3Storage
 from plane.bgtasks.storage_metadata_task import get_asset_object_metadata
 from plane.utils.host import base_host
+from plane.utils.state_restrictions import get_allowed_state_ids
 
 
 class IssueAttachmentEndpoint(BaseAPIView):
@@ -76,6 +77,10 @@ class IssueAttachmentEndpoint(BaseAPIView):
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST])
     def get(self, request, slug, project_id, issue_id):
         issue_attachments = FileAsset.objects.filter(issue_id=issue_id, workspace__slug=slug, project_id=project_id)
+        # State-restricted users may only read attachments of issues they can see
+        allowed_state_ids = get_allowed_state_ids(request.user)
+        if allowed_state_ids is not None:
+            issue_attachments = issue_attachments.filter(issue__state_id__in=allowed_state_ids)
         serializer = IssueAttachmentSerializer(issue_attachments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

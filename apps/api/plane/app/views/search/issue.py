@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from .base import BaseAPIView
 from plane.db.models import Issue, ProjectMember, IssueRelation
 from plane.utils.issue_search import search_issues
+from plane.utils.state_restrictions import filter_issues_for_user
 
 
 class IssueSearchEndpoint(BaseAPIView):
@@ -103,11 +104,14 @@ class IssueSearchEndpoint(BaseAPIView):
         target_date = request.query_params.get("target_date", True)
         issue_id = request.query_params.get("issue_id", False)
 
-        issues = Issue.issue_objects.filter(
-            workspace__slug=slug,
-            project__project_projectmember__member=self.request.user,
-            project__project_projectmember__is_active=True,
-            project__archived_at__isnull=True,
+        issues = filter_issues_for_user(
+            Issue.issue_objects.filter(
+                workspace__slug=slug,
+                project__project_projectmember__member=self.request.user,
+                project__project_projectmember__is_active=True,
+                project__archived_at__isnull=True,
+            ),
+            self.request.user,
         )
 
         if workspace_search == "false":

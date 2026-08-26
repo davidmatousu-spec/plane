@@ -43,6 +43,7 @@ from .. import BaseViewSet
 from plane.db.models import UserFavorite
 from plane.utils.filters import ComplexFilterBackend
 from plane.utils.filters import IssueFilterSet
+from plane.utils.state_restrictions import filter_issues_for_user
 
 
 class WorkspaceViewViewSet(BaseViewSet):
@@ -206,7 +207,10 @@ class WorkspaceViewIssuesViewSet(BaseViewSet):
         )
 
     def get_queryset(self):
-        return Issue.issue_objects.filter(workspace__slug=self.kwargs.get("slug"))
+        return filter_issues_for_user(
+            Issue.issue_objects.filter(workspace__slug=self.kwargs.get("slug")),
+            self.request.user,
+        )
 
     @method_decorator(gzip_page)
     @allow_permission(allowed_roles=[ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST], level="WORKSPACE")

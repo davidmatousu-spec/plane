@@ -59,6 +59,7 @@ from plane.utils.order_queryset import order_issue_queryset
 from plane.utils.paginator import GroupedOffsetPaginator, SubGroupedOffsetPaginator
 from plane.utils.filters import ComplexFilterBackend
 from plane.utils.filters import IssueFilterSet
+from plane.utils.state_restrictions import filter_issues_for_user, get_allowed_state_ids
 
 
 class UserLastProjectWithWorkspaceEndpoint(BaseAPIView):
@@ -132,14 +133,17 @@ class WorkspaceUserProfileIssuesEndpoint(BaseAPIView):
         filters = issue_filters(request.query_params, "GET")
 
         order_by_param = request.GET.get("order_by", "-created_at")
-        issue_queryset = Issue.issue_objects.filter(
-            id__in=Issue.issue_objects.filter(
-                Q(assignees__in=[user_id]) | Q(created_by_id=user_id) | Q(issue_subscribers__subscriber_id=user_id),
+        issue_queryset = filter_issues_for_user(
+            Issue.issue_objects.filter(
+                id__in=Issue.issue_objects.filter(
+                    Q(assignees__in=[user_id]) | Q(created_by_id=user_id) | Q(issue_subscribers__subscriber_id=user_id),
+                    workspace__slug=slug,
+                ).values_list("id", flat=True),
                 workspace__slug=slug,
-            ).values_list("id", flat=True),
-            workspace__slug=slug,
-            project__project_projectmember__member=request.user,
-            project__project_projectmember__is_active=True,
+                project__project_projectmember__member=request.user,
+                project__project_projectmember__is_active=True,
+            ),
+            request.user,
         )
 
         # Apply filtering from filterset
@@ -190,12 +194,14 @@ class WorkspaceUserProfileIssuesEndpoint(BaseAPIView):
                             slug=slug,
                             filters=filters,
                             queryset=total_issue_queryset,
+                            user=request.user,
                         ),
                         sub_group_by_fields=issue_group_values(
                             field=sub_group_by,
                             slug=slug,
                             filters=filters,
                             queryset=total_issue_queryset,
+                            user=request.user,
                         ),
                         group_by_field_name=group_by,
                         sub_group_by_field_name=sub_group_by,
@@ -224,6 +230,7 @@ class WorkspaceUserProfileIssuesEndpoint(BaseAPIView):
                         slug=slug,
                         filters=filters,
                         queryset=total_issue_queryset,
+                        user=request.user,
                     ),
                     group_by_field_name=group_by,
                     count_filter=Q(
@@ -377,6 +384,11 @@ class WorkspaceUserActivityEndpoint(BaseAPIView):
             project__archived_at__isnull=True,
             actor=user_id,
         ).select_related("actor", "workspace", "issue", "project")
+
+        # Hide activity of issues outside the user's allowed states
+        allowed_state_ids = get_allowed_state_ids(request.user)
+        if allowed_state_ids is not None:
+            queryset = queryset.filter(issue__state_id__in=allowed_state_ids)
 
         if projects:
             queryset = queryset.filter(project__in=projects)

@@ -34,6 +34,7 @@ from plane.utils.order_queryset import order_issue_queryset
 from plane.utils.paginator import GroupedOffsetPaginator, SubGroupedOffsetPaginator
 from plane.utils.filters import ComplexFilterBackend
 from plane.utils.filters import IssueFilterSet
+from plane.utils.state_restrictions import filter_issues_for_user
 from .. import BaseViewSet
 from plane.utils.host import base_host
 
@@ -78,14 +79,15 @@ class ModuleIssueViewSet(BaseViewSet):
         )
 
     def get_queryset(self):
-        return (
+        return filter_issues_for_user(
             Issue.issue_objects.filter(
                 project_id=self.kwargs.get("project_id"),
                 workspace__slug=self.kwargs.get("slug"),
                 issue_module__module_id=self.kwargs.get("module_id"),
                 issue_module__deleted_at__isnull=True,
-            )
-        ).distinct()
+            ).distinct(),
+            self.request.user,
+        )
 
     @method_decorator(gzip_page)
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
@@ -144,6 +146,7 @@ class ModuleIssueViewSet(BaseViewSet):
                             project_id=project_id,
                             filters=filters,
                             queryset=total_issue_queryset,
+                            user=request.user,
                         ),
                         sub_group_by_fields=issue_group_values(
                             field=sub_group_by,
@@ -151,6 +154,7 @@ class ModuleIssueViewSet(BaseViewSet):
                             project_id=project_id,
                             filters=filters,
                             queryset=total_issue_queryset,
+                            user=request.user,
                         ),
                         group_by_field_name=group_by,
                         sub_group_by_field_name=sub_group_by,
@@ -181,6 +185,7 @@ class ModuleIssueViewSet(BaseViewSet):
                         project_id=project_id,
                         filters=filters,
                         queryset=total_issue_queryset,
+                        user=request.user,
                     ),
                     group_by_field_name=group_by,
                     count_filter=Q(
