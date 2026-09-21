@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { observer } from "mobx-react";
 // i18n
 import { useTranslation } from "@plane/i18n";
+import type { TIssue } from "@plane/types";
 // ui
 import {
   CycleIcon,
@@ -115,11 +116,22 @@ const ALLOWED_USERS = [
   "samuel.misik@onixia-pasport.cz"
 ];
 
-// Oprávnění pro Budget Complete (Vyčerpáno) - pouze vybraní uživatelé
+// Oprávnění pro dílčí náklady + "Náklady celkem" - pouze vybraní uživatelé
 const ALLOWED_BUDGET_COMPLETE_USERS = [
   "adam.bosak@onixia.cz",
-  "david.matousu@gmail.com",  
+  "david.matousu@gmail.com",
 ];
+
+// Dílčí nákladová pole. "Náklady celkem" (budget_complete) je jejich součet,
+// který dopočítává backend v Issue.save() - v UI je proto jen pro čtení.
+const COST_FIELDS = [
+  { key: "cost_business", label: "Obchodní činnost" },
+  { key: "cost_data_capture", label: "Náběr dat" },
+  { key: "cost_transport", label: "Doprava" },
+  { key: "cost_postproduction", label: "Postprodukce" },
+] as const;
+
+type TCostField = (typeof COST_FIELDS)[number]["key"];
 
 
 const ALLOWED_CONTACT_VIEWERS: string[] = [
@@ -258,40 +270,51 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
   };
   // ------------------------------------------
 
-  // --- BUDGET COMPLETE (Vyčerpáno) LOGIKA ---
-  const [displayValueComplete, setDisplayValueComplete] = useState("");
-  const [isEditingComplete, setIsEditingComplete] = useState(false);
+  // --- DÍLČÍ NÁKLADY (Obchodní činnost / Náběr dat / Doprava / Postprodukce) ---
+  const [costDisplay, setCostDisplay] = useState<Record<string, string>>({});
+  const [editingCost, setEditingCost] = useState<TCostField | null>(null);
 
   useEffect(() => {
-    if (!isEditingComplete && issue) {
-      setDisplayValueComplete(formatMoney(issue.budget_complete));
-    }
-  }, [issue?.budget_complete, isEditingComplete]);
+    if (!issue) return;
+    setCostDisplay((prev) => {
+      const next = { ...prev };
+      for (const { key } of COST_FIELDS) {
+        if (editingCost !== key) next[key] = formatMoney(issue[key]);
+      }
+      return next;
+    });
+  }, [
+    issue?.cost_business,
+    issue?.cost_data_capture,
+    issue?.cost_transport,
+    issue?.cost_postproduction,
+    editingCost,
+  ]);
 
-  const handleFocusComplete = () => {
-    setIsEditingComplete(true);
-    setDisplayValueComplete(issue?.budget_complete?.toString() ?? "");
+  const handleCostFocus = (key: TCostField) => {
+    setEditingCost(key);
+    setCostDisplay((prev) => ({ ...prev, [key]: issue?.[key]?.toString() ?? "" }));
   };
 
-  const handleChangeComplete = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDisplayValueComplete(e.target.value);
+  const handleCostChange = (key: TCostField, value: string) => {
+    setCostDisplay((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleBlurComplete = async () => {
-    setIsEditingComplete(false);
-    const rawValue = displayValueComplete.replace(/[^\d]/g, '');
+  const handleCostBlur = async (key: TCostField) => {
+    setEditingCost(null);
+    const rawValue = (costDisplay[key] ?? "").replace(/[^\d]/g, '');
     const numVal = rawValue === "" ? null : Number(rawValue);
 
-    if (issue && numVal !== issue.budget_complete && issueOperations) {
+    if (issue && numVal !== issue[key] && issueOperations) {
       try {
-        await issueOperations.update(workspaceSlug, projectId, issueId, { budget_complete: numVal });
-        setDisplayValueComplete(formatMoney(numVal));
+        await issueOperations.update(workspaceSlug, projectId, issueId, { [key]: numVal } as Partial<TIssue>);
+        setCostDisplay((prev) => ({ ...prev, [key]: formatMoney(numVal) }));
       } catch (err) {
-        console.error("Budget complete save failed", err);
-        setDisplayValueComplete(formatMoney(issue.budget_complete));
+        console.error(`${key} save failed`, err);
+        setCostDisplay((prev) => ({ ...prev, [key]: formatMoney(issue[key]) }));
       }
     } else {
-      setDisplayValueComplete(formatMoney(numVal));
+      setCostDisplay((prev) => ({ ...prev, [key]: formatMoney(numVal) }));
     }
   };
   // ------------------------------------------
@@ -639,26 +662,39 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
               </SidebarPropertyListItem>
             )}
 
-            {/* --- BUDGET COMPLETE (Vyčerpáno) --- */}
+            {/* --- DÍLČÍ NÁKLADY + NÁKLADY CELKEM --- */}
             {showBudgetComplete && (
-              <SidebarPropertyListItem icon={BudgetPropertyIcon} label="Náklady celkem">
-                <div className="flex items-center w-full h-7.5 group">
-                  <input
-                    type="text"
-                    className="w-full bg-transparent text-left text-body-xs-regular text-custom-text-100 placeholder:text-custom-text-400 focus:outline-none rounded px-1.5 py-0.5 transition-all"
-                    placeholder="-"
-                    value={displayValueComplete}
-                    onFocus={handleFocusComplete}
-                    onChange={handleChangeComplete}
-                    onBlur={handleBlurComplete}
-                    onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-                    disabled={!isEditable}
-                  />
-                  {!isEditingComplete && !displayValueComplete && isEditable && (
-                    <span className="hidden group-hover:inline text-custom-text-400 ml-auto pr-2">✎</span>
-                  )}
-                </div>
-              </SidebarPropertyListItem>
+              <>
+                {COST_FIELDS.map(({ key, label }) => (
+                  <SidebarPropertyListItem key={key} icon={BudgetPropertyIcon} label={label}>
+                    <div className="flex items-center w-full h-7.5 group">
+                      <input
+                        type="text"
+                        className="w-full bg-transparent text-left text-body-xs-regular text-custom-text-100 placeholder:text-custom-text-400 focus:outline-none rounded px-1.5 py-0.5 transition-all"
+                        placeholder="-"
+                        value={costDisplay[key] ?? ""}
+                        onFocus={() => handleCostFocus(key)}
+                        onChange={(e) => handleCostChange(key, e.target.value)}
+                        onBlur={() => handleCostBlur(key)}
+                        onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                        disabled={!isEditable}
+                      />
+                      {editingCost !== key && !costDisplay[key] && isEditable && (
+                        <span className="hidden group-hover:inline text-custom-text-400 ml-auto pr-2">✎</span>
+                      )}
+                    </div>
+                  </SidebarPropertyListItem>
+                ))}
+
+                {/* Automatický součet - jen pro čtení, počítá backend */}
+                <SidebarPropertyListItem icon={BudgetPropertyIcon} label="Náklady celkem">
+                  <div className="flex items-center w-full h-7.5">
+                    <span className="w-full text-left text-body-xs-medium text-custom-text-100 px-1.5 py-0.5">
+                      {formatMoney(issue.budget_complete) || "-"}
+                    </span>
+                  </div>
+                </SidebarPropertyListItem>
+              </>
             )}
             {/* ----------------------------- */}
 

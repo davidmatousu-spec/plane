@@ -62,7 +62,12 @@ class IssueSerializer(BaseSerializer):
         source="type", queryset=IssueType.objects.all(), required=False, allow_null=True
     )
     budget = serializers.IntegerField(required=False, allow_null=True)
-    budget_complete = serializers.IntegerField(required=False, allow_null=True)
+    # budget_complete se dopočítává v Issue.save() jako součet cost_* polí -> jen pro čtení
+    budget_complete = serializers.IntegerField(read_only=True)
+    cost_business = serializers.IntegerField(required=False, allow_null=True)
+    cost_data_capture = serializers.IntegerField(required=False, allow_null=True)
+    cost_transport = serializers.IntegerField(required=False, allow_null=True)
+    cost_postproduction = serializers.IntegerField(required=False, allow_null=True)
     contact_person = serializers.CharField(required=False, allow_null=True)
     dealer = serializers.CharField(required=False, allow_null=True)
     dealer_paid = serializers.BooleanField(required=False, default=False)
@@ -636,7 +641,12 @@ class IssueExpandSerializer(BaseSerializer):
     cycle = CycleLiteSerializer(source="issue_cycle.cycle", read_only=True)
     module = ModuleLiteSerializer(source="issue_module.module", read_only=True)
     budget = serializers.IntegerField(required=False, allow_null=True)
-    budget_complete = serializers.IntegerField(required=False, allow_null=True)
+    # budget_complete se dopočítává v Issue.save() jako součet cost_* polí -> jen pro čtení
+    budget_complete = serializers.IntegerField(read_only=True)
+    cost_business = serializers.IntegerField(required=False, allow_null=True)
+    cost_data_capture = serializers.IntegerField(required=False, allow_null=True)
+    cost_transport = serializers.IntegerField(required=False, allow_null=True)
+    cost_postproduction = serializers.IntegerField(required=False, allow_null=True)
     contact_person = serializers.CharField(required=False, allow_null=True)
     dealer = serializers.CharField(required=False, allow_null=True)
     dealer_paid = serializers.BooleanField(required=False, default=False)

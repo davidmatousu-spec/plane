@@ -64,6 +64,10 @@ class IssueFlatSerializer(BaseSerializer):
             "is_draft",
             "budget",
             "budget_complete",
+            "cost_business",
+            "cost_data_capture",
+            "cost_transport",
+            "cost_postproduction",
             "contact_person",
             "dealer",
             "dealer_paid",
@@ -113,6 +117,8 @@ class IssueCreateSerializer(BaseSerializer):
             "updated_by",
             "created_at",
             "updated_at",
+            # dopočítává se v Issue.save() jako součet cost_* polí
+            "budget_complete",
         ]
 
     def to_representation(self, instance):
@@ -808,6 +814,10 @@ class IssueSerializer(DynamicBaseSerializer):
             "archived_at",
             "budget",
             "budget_complete",
+            "cost_business",
+            "cost_data_capture",
+            "cost_transport",
+            "cost_postproduction",
             "contact_person",
             "dealer",
             "dealer_paid",
@@ -872,6 +882,10 @@ class IssueListDetailSerializer(serializers.Serializer):
             "link_count": instance.link_count,
             "budget": instance.budget,
             "budget_complete": instance.budget_complete,
+            "cost_business": instance.cost_business,
+            "cost_data_capture": instance.cost_data_capture,
+            "cost_transport": instance.cost_transport,
+            "cost_postproduction": instance.cost_postproduction,
             "contact_person": instance.contact_person,
             "dealer": instance.dealer,
             "dealer_paid": instance.dealer_paid,

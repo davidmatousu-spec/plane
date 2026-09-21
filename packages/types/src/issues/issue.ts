@@ -46,7 +46,12 @@ export type TBaseIssue = {
   priority: TIssuePriorities | null;
   label_ids: string[];
   budget: number | null;
+  /** "Náklady celkem" – dopočítává backend jako součet cost_* polí */
   budget_complete: number | null;
+  cost_business: number | null;
+  cost_data_capture: number | null;
+  cost_transport: number | null;
+  cost_postproduction: number | null;
   contact_person: string | null;
   dealer: string | null;
   dealer_paid: boolean;

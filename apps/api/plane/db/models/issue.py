@@ -26,6 +26,24 @@ from plane.db.mixins import ChangeTrackerMixin
 from .state import StateGroup
 
 
+# Dílčí nákladová pole. budget_complete ("Náklady celkem") je jejich automatický součet.
+COST_FIELDS = (
+    "cost_business",
+    "cost_data_capture",
+    "cost_transport",
+    "cost_postproduction",
+)
+
+# field -> text do aktivity (historie issue)
+COST_FIELD_LABELS = {
+    "cost_business": "updated obchodní činnost to",
+    "cost_data_capture": "updated náběr dat to",
+    "cost_transport": "updated doprava to",
+    "cost_postproduction": "updated postprodukce to",
+    "budget_complete": "updated budget complete to",
+}
+
+
 def get_default_properties():
     return {
         "assignee": True,
@@ -45,6 +63,10 @@ def get_default_properties():
         "contact_person": True,
         "dealer": True,
         "budget_complete": True,
+        "cost_business": True,
+        "cost_data_capture": True,
+        "cost_transport": True,
+        "cost_postproduction": True,
     }
 
 
@@ -62,6 +84,10 @@ def get_default_filters():
         "subscriber": None,
         "contact_person": None,
         "budget_complete": None,
+        "cost_business": None,
+        "cost_data_capture": None,
+        "cost_transport": None,
+        "cost_postproduction": None,
     }
 
 
@@ -96,6 +122,10 @@ def get_default_display_properties():
         "contact_person": True,
         "dealer": True,
         "budget_complete": True,
+        "cost_business": True,
+        "cost_data_capture": True,
+        "cost_transport": True,
+        "cost_postproduction": True,
     }
 
 
@@ -168,7 +198,13 @@ class Issue(ProjectBaseModel):
     sequence_id = models.IntegerField(default=1, verbose_name="Issue Sequence ID")
     labels = models.ManyToManyField("db.Label", blank=True, related_name="labels", through="IssueLabel")
     budget = models.IntegerField(null=True, blank=True)
+    # "Náklady celkem" – dopočítává se automaticky jako součet COST_FIELDS v save()
     budget_complete = models.BigIntegerField(null=True, blank=True)
+    # Dílčí náklady (viditelné jen pro vybrané uživatele, stejně jako budget_complete)
+    cost_business = models.BigIntegerField(null=True, blank=True)
+    cost_data_capture = models.BigIntegerField(null=True, blank=True)
+    cost_transport = models.BigIntegerField(null=True, blank=True)
+    cost_postproduction = models.BigIntegerField(null=True, blank=True)
     sort_order = models.FloatField(default=65535)
     completed_at = models.DateTimeField(null=True)
     archived_at = models.DateField(null=True)
@@ -263,23 +299,59 @@ class Issue(ProjectBaseModel):
                     )
             except Exception:
                 pass
-        # --- SLEDOVÁNÍ ZMĚN BUDGET_COMPLETE ---
-        if not self._state.adding:
+        # 3. NÁKLADY CELKEM = automatický součet dílčích nákladů
+        #
+        # Pravidla (záměrně konzervativní, aby se neztratila historická data):
+        #  - je vyplněné aspoň jedno dílčí pole -> budget_complete = jejich součet
+        #  - rozpad byl vyplněný a teď je celý smazaný -> budget_complete = NULL
+        #  - rozpad nikdy nebyl vyplněný (historická zakázka) -> hodnotu NEMĚNÍME
+        try:
+            old_cost_instance = None if self._state.adding else Issue.objects.get(pk=self.pk)
+        except Exception:
+            old_cost_instance = None
+
+        cost_values = [getattr(self, field, None) for field in COST_FIELDS]
+        has_breakdown = any(value is not None for value in cost_values)
+        had_breakdown = old_cost_instance is not None and any(
+            getattr(old_cost_instance, field, None) is not None for field in COST_FIELDS
+        )
+
+        if has_breakdown:
+            self.budget_complete = sum(value for value in cost_values if value is not None)
+        elif had_breakdown:
+            self.budget_complete = None
+
+        # Když volající omezil zápis přes update_fields, musíme si tam dopočítaný
+        # součet přidat, jinak by se do DB neuložil.
+        update_fields = kwargs.get("update_fields")
+        if update_fields is not None:
+            update_fields = set(update_fields)
+            if update_fields & set(COST_FIELDS):
+                update_fields.add("budget_complete")
+                kwargs["update_fields"] = update_fields
+
+        # --- SLEDOVÁNÍ ZMĚN NÁKLADOVÝCH POLÍ ---
+        # Jeden SELECT pro všechna pole (dřív byl jeden dotaz na pole).
+        if old_cost_instance is not None:
             try:
-                old_instance = Issue.objects.get(pk=self.pk)
-                if old_instance.budget_complete != self.budget_complete:
-                    from django.apps import apps
-                    from django.utils import timezone
-                    IssueActivity = apps.get_model("db", "IssueActivity")
+                from django.apps import apps
+                from django.utils import timezone
+
+                IssueActivity = apps.get_model("db", "IssueActivity")
+                for field in COST_FIELDS + ("budget_complete",):
+                    old_value = getattr(old_cost_instance, field)
+                    new_value = getattr(self, field)
+                    if old_value == new_value:
+                        continue
                     IssueActivity.objects.create(
                         issue_id=self.id,
                         project_id=self.project_id,
                         workspace_id=self.workspace_id,
-                        comment="updated budget complete to",
+                        comment=COST_FIELD_LABELS[field],
                         verb="updated",
-                        field="budget_complete",
-                        old_value=old_instance.budget_complete,
-                        new_value=self.budget_complete,
+                        field=field,
+                        old_value=old_value,
+                        new_value=new_value,
                         actor_id=self.updated_by_id,
                         epoch=timezone.now().timestamp()
                     )
@@ -803,6 +875,10 @@ class IssueVersion(ProjectBaseModel):
     meta = models.JSONField(default=dict)  # issue meta
     contact_person = models.CharField(max_length=255, null=True, blank=True)
     budget_complete = models.BigIntegerField(null=True, blank=True)
+    cost_business = models.BigIntegerField(null=True, blank=True)
+    cost_data_capture = models.BigIntegerField(null=True, blank=True)
+    cost_transport = models.BigIntegerField(null=True, blank=True)
+    cost_postproduction = models.BigIntegerField(null=True, blank=True)
     last_saved_at = models.DateTimeField(default=timezone.now)
 
     issue = models.ForeignKey("db.Issue", on_delete=models.CASCADE, related_name="versions")
@@ -847,7 +923,12 @@ class IssueVersion(ProjectBaseModel):
                 state=issue.state_id,
                 estimate_point=issue.estimate_point_id,
                 name=issue.name,
-                contact_person=issue.contact_person, 
+                contact_person=issue.contact_person,
+                budget_complete=issue.budget_complete,
+                cost_business=issue.cost_business,
+                cost_data_capture=issue.cost_data_capture,
+                cost_transport=issue.cost_transport,
+                cost_postproduction=issue.cost_postproduction,
                 priority=issue.priority,
                 start_date=issue.start_date,
                 target_date=issue.target_date,
