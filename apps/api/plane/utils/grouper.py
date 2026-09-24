@@ -126,6 +126,7 @@ def issue_on_results(
         "archived_at",
         "state__group",
         "dealer",
+        "scanner",
         "dealer_paid",
         "firmly_ordered",
     ]

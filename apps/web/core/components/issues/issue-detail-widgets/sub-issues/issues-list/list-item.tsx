@@ -22,6 +22,8 @@ import { IssueIdentifier } from "@/plane-web/components/issues/issue-details/iss
 // local components
 import { SubIssuesListItemProperties } from "./properties";
 import { SubIssuesListRoot } from "./root";
+import { SCANNER_BADGE_STYLE, parseScanners } from "@/components/issues/scanner-config";
+import { ScannerIcon } from "@/components/issues/scanner-icon";
 
 // --- ALLOWED USERS (same as sidebar.tsx) ---
 const ALLOWED_USERS = [
@@ -216,6 +218,23 @@ export const SubIssuesListItem = observer(function SubIssuesListItem(props: Prop
                       }}
                     >
                       <span className="truncate max-w-[80px]">{dealerName.split(" ")[0]}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Skenovači - tyrkysová + ikonka skenu (odlišení od obchodníka) */}
+              {parseScanners(issue.scanner).length > 0 && (
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {parseScanners(issue.scanner).map((scannerName) => (
+                    <div
+                      key={scannerName}
+                      title="Skenovač"
+                      className="flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium"
+                      style={SCANNER_BADGE_STYLE}
+                    >
+                      <ScannerIcon className="h-2.5 w-2.5 shrink-0" />
+                      <span className="truncate max-w-[80px]">{scannerName}</span>
                     </div>
                   ))}
                 </div>

@@ -48,6 +48,8 @@ import { IssueLabel } from "./label";
 import { IssueModuleSelect } from "./module-select";
 import type { TIssueOperations } from "./root";
 import { DealerDropdown } from "@/components/issues/dealer-dropdown";
+import { ScannerDropdown } from "@/components/issues/scanner-dropdown";
+import { ScannerIcon } from "@/components/issues/scanner-icon";
 import { IssueService } from "@/services/issue";
 
 const issueService = new IssueService();
@@ -389,6 +391,18 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
     }
   };
 
+  // --- 6. SKENOVAČ ---
+  const handleScannerChange = async (val: string) => {
+    if (val === (issue?.scanner ?? "")) return;
+    try {
+      await issueOperations.update(workspaceSlug, projectId, issueId, {
+        scanner: val,
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   return (
     <>
       <div className="flex items-center h-full w-full flex-col divide-y-2 divide-subtle-1 overflow-hidden">
@@ -501,6 +515,15 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
                 </div>
               </SidebarPropertyListItem>
             )}
+
+            {/* --- SKENOVAČ (DROPDOWN) - viditelný pro všechny, stejně jako obchodník --- */}
+            <SidebarPropertyListItem icon={ScannerIcon} label="Skenovač">
+              <ScannerDropdown
+                value={issue?.scanner ?? ""}
+                onChange={handleScannerChange}
+                disabled={!isEditable}
+              />
+            </SidebarPropertyListItem>
 
             <SidebarPropertyListItem icon={StatePropertyIcon} label={t("common.state")}>
               <StateDropdown

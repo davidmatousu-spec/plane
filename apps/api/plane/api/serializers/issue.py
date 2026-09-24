@@ -71,6 +71,7 @@ class IssueSerializer(BaseSerializer):
     cost_order_calling = serializers.IntegerField(required=False, allow_null=True)
     contact_person = serializers.CharField(required=False, allow_null=True)
     dealer = serializers.CharField(required=False, allow_null=True)
+    scanner = serializers.CharField(required=False, allow_null=True, allow_blank=True, max_length=255)
     dealer_paid = serializers.BooleanField(required=False, default=False)
     firmly_ordered = serializers.BooleanField(required=False, default=False)
 
@@ -651,6 +652,7 @@ class IssueExpandSerializer(BaseSerializer):
     cost_order_calling = serializers.IntegerField(required=False, allow_null=True)
     contact_person = serializers.CharField(required=False, allow_null=True)
     dealer = serializers.CharField(required=False, allow_null=True)
+    scanner = serializers.CharField(required=False, allow_null=True, allow_blank=True, max_length=255)
     dealer_paid = serializers.BooleanField(required=False, default=False)
     firmly_ordered = serializers.BooleanField(required=False, default=False)
     labels = serializers.SerializerMethodField()

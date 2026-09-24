@@ -46,6 +46,8 @@ import { IssueCycleSelect } from "../issue-detail/cycle-select";
 import { IssueLabel } from "../issue-detail/label";
 import { IssueModuleSelect } from "../issue-detail/module-select";
 import { DealerDropdown } from "@/components/issues/dealer-dropdown";
+import { ScannerDropdown } from "@/components/issues/scanner-dropdown";
+import { ScannerIcon } from "@/components/issues/scanner-icon";
 import { IssueService } from "@/services/issue";
 
 const issueService = new IssueService();
@@ -370,6 +372,18 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
     }
   };
 
+  // --- 6. SKENOVAČ ---
+  const handleScannerChange = async (val: string) => {
+    if (val === (issue?.scanner ?? "")) return;
+    try {
+      await issueOperations.update(workspaceSlug, projectId, issueId, {
+        scanner: val,
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
 
   if (!issue) return <></>;
 
@@ -495,6 +509,11 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
             </div>
           </SidebarPropertyListItem>
         )}
+
+        {/* --- SKENOVAČ (DROPDOWN) - viditelný pro všechny, stejně jako obchodník --- */}
+        <SidebarPropertyListItem icon={ScannerIcon} label="Skenovač">
+          <ScannerDropdown value={issue?.scanner ?? ""} onChange={handleScannerChange} disabled={disabled} />
+        </SidebarPropertyListItem>
 
         <SidebarPropertyListItem icon={StatePropertyIcon} label={t("common.state")}>
           <StateDropdown

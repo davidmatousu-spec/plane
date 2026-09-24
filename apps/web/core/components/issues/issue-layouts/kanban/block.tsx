@@ -34,6 +34,8 @@ import type { TRenderQuickActions } from "../list/list-view-types";
 import { IssueProperties } from "../properties/all-properties";
 import { WithDisplayPropertiesHOC } from "../properties/with-display-properties-HOC";
 import { parseDealers } from "@/components/issues/dealer-config";
+import { SCANNER_BADGE_STYLE, parseScanners } from "@/components/issues/scanner-config";
+import { ScannerIcon } from "@/components/issues/scanner-icon";
 
 interface IssueBlockProps {
   issueId: string;
@@ -88,6 +90,8 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
 
   // derived values
   const subIssueCount = issue?.sub_issues_count ?? 0;
+  const dealers = parseDealers(issue?.dealer);
+  const scanners = parseScanners(issue?.scanner);
 
   const handleEventPropagation = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -147,9 +151,11 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
         isEpic={isEpic}
       />
 
-      {issue.dealer && parseDealers(issue.dealer).length > 0 && (
-        <div className={cn("flex items-center gap-1.5 flex-wrap", isNested ? "pt-1" : "pt-1.5")}>
-          {parseDealers(issue.dealer).map((dealerName) => (
+      {(dealers.length > 0 || scanners.length > 0) && (
+        <div className={cn("flex items-start justify-between gap-1.5", isNested ? "pt-1" : "pt-1.5")}>
+        {/* Obchodníci - vlevo */}
+        <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+          {dealers.map((dealerName) => (
             <div
               key={dealerName}
               className={cn(
@@ -174,6 +180,27 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
               )}
             </div>
           ))}
+        </div>
+
+        {/* Skenovači - vpravo, tyrkysová + ikonka skenu (odlišení od obchodníka) */}
+        {scanners.length > 0 && (
+          <div className="flex items-center justify-end gap-1.5 flex-wrap ml-auto">
+            {scanners.map((scannerName) => (
+              <div
+                key={scannerName}
+                title="Skenovač"
+                className={cn(
+                  "flex items-center gap-1 rounded-full font-medium",
+                  isNested ? "px-1.5 py-0 text-[9px]" : "px-2 py-0.5 text-xs"
+                )}
+                style={SCANNER_BADGE_STYLE}
+              >
+                {!isNested && <ScannerIcon className="h-3 w-3 shrink-0" />}
+                <span className={cn("truncate", isNested ? "max-w-[80px]" : "max-w-[120px]")}>{scannerName}</span>
+              </div>
+            ))}
+          </div>
+        )}
         </div>
       )}
 

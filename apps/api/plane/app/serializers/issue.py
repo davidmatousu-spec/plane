@@ -71,6 +71,7 @@ class IssueFlatSerializer(BaseSerializer):
             "cost_order_calling",
             "contact_person",
             "dealer",
+            "scanner",
             "dealer_paid",
             "firmly_ordered",
         ]
@@ -822,6 +823,7 @@ class IssueSerializer(DynamicBaseSerializer):
             "cost_order_calling",
             "contact_person",
             "dealer",
+            "scanner",
             "dealer_paid",
             "firmly_ordered",
         ]
@@ -891,6 +893,7 @@ class IssueListDetailSerializer(serializers.Serializer):
             "cost_order_calling": instance.cost_order_calling,
             "contact_person": instance.contact_person,
             "dealer": instance.dealer,
+            "scanner": instance.scanner,
             "dealer_paid": instance.dealer_paid,
             "firmly_ordered": instance.firmly_ordered,
             

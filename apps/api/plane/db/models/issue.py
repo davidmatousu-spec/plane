@@ -39,14 +39,16 @@ COST_FIELDS = (
 # označí jako "Závazně objednáno" (a pole je prázdné).
 ORDER_CALLING_DEFAULT_AMOUNT = 1200
 
-# field -> text do aktivity (historie issue)
-COST_FIELD_LABELS = {
+# field -> text do aktivity (historie issue). Změny těchto polí zapisuje Issue.save(),
+# standardní Plane activity task je nezná.
+ACTIVITY_FIELD_LABELS = {
     "cost_order_calling": "updated navolání zakázky to",
     "cost_business": "updated obchodní činnost to",
     "cost_data_capture": "updated náběr dat to",
     "cost_transport": "updated doprava + ubytování to",
     "cost_postproduction": "updated postprodukce to",
     "budget_complete": "updated budget complete to",
+    "scanner": "updated the scanner to",
 }
 
 
@@ -68,6 +70,7 @@ def get_default_properties():
         "updated_on": True,
         "contact_person": True,
         "dealer": True,
+        "scanner": True,
         "budget_complete": True,
         "cost_business": True,
         "cost_data_capture": True,
@@ -129,6 +132,7 @@ def get_default_display_properties():
         "updated_on": True,
         "contact_person": True,
         "dealer": True,
+        "scanner": True,
         "budget_complete": True,
         "cost_business": True,
         "cost_data_capture": True,
@@ -195,6 +199,8 @@ class Issue(ProjectBaseModel):
     start_date = models.DateField(null=True, blank=True)
     target_date = models.DateField(null=True, blank=True)
     dealer = models.CharField(max_length=255, null=True, blank=True)
+    # Skenovač - křestní jména oddělená čárkou ("Adam, Jirka"), stejně jako dealer
+    scanner = models.CharField(max_length=255, null=True, blank=True)
     dealer_paid = models.BooleanField(default=False)
     firmly_ordered = models.BooleanField(default=False)
     assignees = models.ManyToManyField(
@@ -354,7 +360,7 @@ class Issue(ProjectBaseModel):
                 update_fields.add("budget_complete")
             kwargs["update_fields"] = update_fields
 
-        # --- SLEDOVÁNÍ ZMĚN NÁKLADOVÝCH POLÍ ---
+        # --- SLEDOVÁNÍ ZMĚN (náklady + skenovač) ---
         # Jeden SELECT pro všechna pole (dřív byl jeden dotaz na pole).
         if old_cost_instance is not None:
             try:
@@ -362,7 +368,7 @@ class Issue(ProjectBaseModel):
                 from django.utils import timezone
 
                 IssueActivity = apps.get_model("db", "IssueActivity")
-                for field in COST_FIELDS + ("budget_complete",):
+                for field, comment in ACTIVITY_FIELD_LABELS.items():
                     old_value = getattr(old_cost_instance, field)
                     new_value = getattr(self, field)
                     if old_value == new_value:
@@ -371,7 +377,7 @@ class Issue(ProjectBaseModel):
                         issue_id=self.id,
                         project_id=self.project_id,
                         workspace_id=self.workspace_id,
-                        comment=COST_FIELD_LABELS[field],
+                        comment=comment,
                         verb="updated",
                         field=field,
                         old_value=old_value,
@@ -881,6 +887,8 @@ class IssueVersion(ProjectBaseModel):
     start_date = models.DateField(null=True, blank=True)
     target_date = models.DateField(null=True, blank=True)
     dealer = models.CharField(max_length=255, null=True, blank=True)
+    # Skenovač - křestní jména oddělená čárkou ("Adam, Jirka"), stejně jako dealer
+    scanner = models.CharField(max_length=255, null=True, blank=True)
     dealer_paid = models.BooleanField(default=False)
     firmly_ordered = models.BooleanField(default=False)
     assignees = ArrayField(models.UUIDField(), blank=True, default=list)

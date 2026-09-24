@@ -55,6 +55,8 @@ export type TBaseIssue = {
   cost_order_calling: number | null;
   contact_person: string | null;
   dealer: string | null;
+  /** Skenovač - křestní jména oddělená čárkou ("Adam, Jirka") */
+  scanner: string | null;
   dealer_paid: boolean;
   firmly_ordered: boolean;
   assignee_ids: string[];

@@ -31,6 +31,7 @@ import { Tooltip } from "@plane/propel/tooltip";
 import type { IIssueActivity } from "@plane/types";
 import { renderFormattedDate, generateWorkItemLink, capitalizeFirstLetter } from "@plane/utils";
 // helpers
+import { ScannerIcon } from "@/components/issues/scanner-icon";
 import { useLabel } from "@/hooks/store/use-label";
 import { usePlatformOS } from "@/hooks/use-platform-os";
 // types
@@ -277,6 +278,26 @@ const activityDetails: {
       </svg>
   ),
 },
+  scanner: {
+    message: (activity, showIssue) => (
+      <>
+        {activity.new_value ? (
+          <>
+            aktualizoval skenovače na <span className="font-medium text-custom-text-100">{activity.new_value}</span>
+          </>
+        ) : (
+          <>odebral skenovače</>
+        )}
+        {showIssue && (
+          <>
+            {" "}
+            v úkolu <IssueLink activity={activity} />
+          </>
+        )}
+      </>
+    ),
+    icon: <ScannerIcon className="size-3" />,
+  },
   estimate_point: {
     message: (activity, showIssue) => {
       if (!activity.new_value)

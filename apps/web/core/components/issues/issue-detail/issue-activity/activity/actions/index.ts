@@ -19,6 +19,7 @@ export * from "./inbox";
 export * from "./label-activity-chip";
 export * from "./contact-person";
 export * from "./dealer";
+export * from "./scanner";
 
 // helpers
 export * from "./helpers/activity-block";

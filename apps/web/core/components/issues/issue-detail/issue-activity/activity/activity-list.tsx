@@ -28,6 +28,7 @@ import {
   IssueInboxActivity,
   IssueContactPersonActivity,
   IssueDealerActivity,
+  IssueScannerActivity,
 } from "./actions";
 
 type TIssueActivityItem = {
@@ -60,7 +61,9 @@ export const IssueActivityItem = observer(function IssueActivityItem(props: TIss
     case "contact_person":
       return <IssueContactPersonActivity {...componentDefaultProps} />;  
     case "dealer":
-      return <IssueDealerActivity {...componentDefaultProps} />;        
+      return <IssueDealerActivity {...componentDefaultProps} />;
+    case "scanner":
+      return <IssueScannerActivity {...componentDefaultProps} />;
     case "assignees":
       return <IssueAssigneeActivity {...componentDefaultProps} showIssue={false} />;
     case "priority":

@@ -189,6 +189,7 @@ class IssueListEndpoint(BaseAPIView):
                 "archived_at",
                 "deleted_at",
                 "dealer",
+                "scanner",
                 "dealer_paid",
                 "firmly_ordered",
             )
@@ -488,6 +489,7 @@ class IssueViewSet(BaseViewSet):
                     "archived_at",
                     "deleted_at",
                     "dealer",
+                    "scanner",
                     "dealer_paid",
                     "firmly_ordered",
                 )

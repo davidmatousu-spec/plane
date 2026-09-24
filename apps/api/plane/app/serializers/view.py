@@ -42,6 +42,7 @@ class ViewIssueListSerializer(serializers.Serializer):
             "is_draft": instance.is_draft,
             "archived_at": instance.archived_at,
             "dealer": instance.dealer,
+            "scanner": instance.scanner,
             "dealer_paid": instance.dealer_paid,
             "firmly_ordered": instance.firmly_ordered,
             "state__group": instance.state.group if instance.state else None,
