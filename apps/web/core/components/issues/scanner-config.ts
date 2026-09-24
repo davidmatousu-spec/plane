@@ -5,6 +5,7 @@ export const SCANNER_OPTIONS = [
   { value: "Adam", label: "Adam" },
   { value: "David", label: "David" },
   { value: "Jirka", label: "Jirka" },
+  { value: "Robert", label: "Robert" },
 ] as const;
 
 const SCANNER_VALUES: string[] = SCANNER_OPTIONS.map((o) => o.value);
