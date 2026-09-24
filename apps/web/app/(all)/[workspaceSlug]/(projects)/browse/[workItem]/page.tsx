@@ -122,7 +122,10 @@ export const IssueDetailsPage = observer(function IssueDetailsPage({ params }: R
       <PageHead title={pageTitle} />
       {workspaceSlug && projectId && issueId && (
         <ProjectAuthWrapper workspaceSlug={workspaceSlug} projectId={projectId}>
+          {/* key: the route stays mounted when navigating between work items, and an SWR cache hit skips
+              the loader, so remount per issue to reset local state (editor content, pending saves) */}
           <WorkItemDetailRoot
+            key={issueId}
             workspaceSlug={workspaceSlug.toString()}
             projectId={projectId.toString()}
             issueId={issueId.toString()}
