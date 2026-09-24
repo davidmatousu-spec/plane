@@ -52,6 +52,7 @@ export type TBaseIssue = {
   cost_data_capture: number | null;
   cost_transport: number | null;
   cost_postproduction: number | null;
+  cost_order_calling: number | null;
   contact_person: string | null;
   dealer: string | null;
   dealer_paid: boolean;

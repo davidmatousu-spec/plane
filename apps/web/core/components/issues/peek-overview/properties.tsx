@@ -125,9 +125,10 @@ const ALLOWED_BUDGET_COMPLETE_USERS = [
 // Dílčí nákladová pole. "Náklady celkem" (budget_complete) je jejich součet,
 // který dopočítává backend v Issue.save() - v UI je proto jen pro čtení.
 const COST_FIELDS = [
+  { key: "cost_order_calling", label: "Navolání zakázky" },
   { key: "cost_business", label: "Obchodní činnost" },
   { key: "cost_data_capture", label: "Náběr dat" },
-  { key: "cost_transport", label: "Doprava" },
+  { key: "cost_transport", label: "Doprava + ubytování" },
   { key: "cost_postproduction", label: "Postprodukce" },
 ] as const;
 
@@ -249,6 +250,7 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
     issue?.cost_data_capture,
     issue?.cost_transport,
     issue?.cost_postproduction,
+    issue?.cost_order_calling,
     editingCost,
   ]);
 

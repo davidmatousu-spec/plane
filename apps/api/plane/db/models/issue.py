@@ -28,6 +28,7 @@ from .state import StateGroup
 
 # Dílčí nákladová pole. budget_complete ("Náklady celkem") je jejich automatický součet.
 COST_FIELDS = (
+    "cost_order_calling",
     "cost_business",
     "cost_data_capture",
     "cost_transport",
@@ -36,9 +37,10 @@ COST_FIELDS = (
 
 # field -> text do aktivity (historie issue)
 COST_FIELD_LABELS = {
+    "cost_order_calling": "updated navolání zakázky to",
     "cost_business": "updated obchodní činnost to",
     "cost_data_capture": "updated náběr dat to",
-    "cost_transport": "updated doprava to",
+    "cost_transport": "updated doprava + ubytování to",
     "cost_postproduction": "updated postprodukce to",
     "budget_complete": "updated budget complete to",
 }
@@ -67,6 +69,7 @@ def get_default_properties():
         "cost_data_capture": True,
         "cost_transport": True,
         "cost_postproduction": True,
+        "cost_order_calling": True,
     }
 
 
@@ -88,6 +91,7 @@ def get_default_filters():
         "cost_data_capture": None,
         "cost_transport": None,
         "cost_postproduction": None,
+        "cost_order_calling": None,
     }
 
 
@@ -126,6 +130,7 @@ def get_default_display_properties():
         "cost_data_capture": True,
         "cost_transport": True,
         "cost_postproduction": True,
+        "cost_order_calling": True,
     }
 
 
@@ -205,6 +210,7 @@ class Issue(ProjectBaseModel):
     cost_data_capture = models.BigIntegerField(null=True, blank=True)
     cost_transport = models.BigIntegerField(null=True, blank=True)
     cost_postproduction = models.BigIntegerField(null=True, blank=True)
+    cost_order_calling = models.BigIntegerField(null=True, blank=True)
     sort_order = models.FloatField(default=65535)
     completed_at = models.DateTimeField(null=True)
     archived_at = models.DateField(null=True)
@@ -879,6 +885,7 @@ class IssueVersion(ProjectBaseModel):
     cost_data_capture = models.BigIntegerField(null=True, blank=True)
     cost_transport = models.BigIntegerField(null=True, blank=True)
     cost_postproduction = models.BigIntegerField(null=True, blank=True)
+    cost_order_calling = models.BigIntegerField(null=True, blank=True)
     last_saved_at = models.DateTimeField(default=timezone.now)
 
     issue = models.ForeignKey("db.Issue", on_delete=models.CASCADE, related_name="versions")
@@ -929,6 +936,7 @@ class IssueVersion(ProjectBaseModel):
                 cost_data_capture=issue.cost_data_capture,
                 cost_transport=issue.cost_transport,
                 cost_postproduction=issue.cost_postproduction,
+                cost_order_calling=issue.cost_order_calling,
                 priority=issue.priority,
                 start_date=issue.start_date,
                 target_date=issue.target_date,

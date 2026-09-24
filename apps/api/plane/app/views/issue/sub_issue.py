@@ -147,6 +147,7 @@ class SubIssuesEndpoint(BaseAPIView):
             "cost_data_capture",
             "cost_transport",
             "cost_postproduction",
+            "cost_order_calling",
             "dealer",
             "dealer_paid",
             "firmly_ordered",
