@@ -182,7 +182,7 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
           ))}
         </div>
 
-        {/* Skenovači - vpravo, tyrkysová + ikonka skenu (odlišení od obchodníka) */}
+        {/* Skenovači - vpravo, oranžová + ikonka skenu (odlišení od obchodníka) */}
         {scanners.length > 0 && (
           <div className="flex items-center justify-end gap-1.5 flex-wrap ml-auto">
             {scanners.map((scannerName) => (

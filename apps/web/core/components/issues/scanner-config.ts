@@ -9,14 +9,14 @@ export const SCANNER_OPTIONS = [
 
 const SCANNER_VALUES: string[] = SCANNER_OPTIONS.map((o) => o.value);
 
-// Barva štítku na kartě / v sub-issues - tyrkysová: nekoliduje s obchodníkem (indigo/zelená)
-// ani s podbarvením karty podle priority (červená/oranžová/žlutá/modrá). Inset obrys
-// místo borderu, aby štítek neměl jinou výšku než štítek obchodníka.
-// Inline style, protože Tailwind paleta je v tomhle forku osekaná.
+// Barva štítku na kartě / v sub-issues - oranžová (orange-400). Karty s vysokou prioritou
+// mají oranžové podbarvení (orange-500), proto světlejší odstín + sytější inset obrys, aby
+// štítek na takové kartě nesplynul. Inset obrys místo borderu, aby štítek neměl jinou výšku
+// než štítek obchodníka. Inline style, protože Tailwind paleta je v tomhle forku osekaná.
 export const SCANNER_BADGE_STYLE = {
-  backgroundColor: "rgba(34, 211, 238, 0.14)",
-  color: "rgb(34, 211, 238)",
-  boxShadow: "inset 0 0 0 1px rgba(34, 211, 238, 0.35)",
+  backgroundColor: "rgba(251, 146, 60, 0.16)",
+  color: "rgb(251, 146, 60)",
+  boxShadow: "inset 0 0 0 1px rgba(251, 146, 60, 0.5)",
 } as const;
 
 /** "adam" -> "Adam"; neznámé jméno (např. zapsané přes API) necháme beze změny. */

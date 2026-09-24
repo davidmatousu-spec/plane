@@ -223,7 +223,7 @@ export const SubIssuesListItem = observer(function SubIssuesListItem(props: Prop
                 </div>
               )}
 
-              {/* Skenovači - tyrkysová + ikonka skenu (odlišení od obchodníka) */}
+              {/* Skenovači - oranžová + ikonka skenu (odlišení od obchodníka) */}
               {parseScanners(issue.scanner).length > 0 && (
                 <div className="flex items-center gap-1 flex-shrink-0">
                   {parseScanners(issue.scanner).map((scannerName) => (
