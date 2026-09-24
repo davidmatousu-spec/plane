@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { observer } from "mobx-react";
 // i18n
 import { useTranslation } from "@plane/i18n";
@@ -46,6 +46,9 @@ import { IssueCycleSelect } from "../issue-detail/cycle-select";
 import { IssueLabel } from "../issue-detail/label";
 import { IssueModuleSelect } from "../issue-detail/module-select";
 import { DealerDropdown } from "@/components/issues/dealer-dropdown";
+import { IssueService } from "@/services/issue";
+
+const issueService = new IssueService();
 
 // Vlastní ikonka bankovky
 const BudgetPropertyIcon = (props: any) => (
@@ -161,8 +164,27 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
   const { getProjectById } = useProject();
   const {
     issue: { getIssueById },
+    rootIssueStore,
   } = useIssueDetail();
   const { getStateById } = useProjectState();
+
+  // Backend dopočítává "Náklady celkem" a při "Závazně objednáno" doplní "Navolání
+  // zakázky". PATCH vrací 204 bez dat, proto si po uložení issue načteme a do store
+  // propíšeme JEN tyhle dvě hodnoty - ne celé issue, aby refresh nepřepsal jinou
+  // úpravu, která mezitím proběhla. Záměrně ne issueOperations.fetch - ten by při
+  // chybě přepnul celý peek do chybového stavu. Chyba refreshe nevadí - data jsou uložená.
+  const refreshServerComputedFields = () => {
+    issueService
+      .retrieve(workspaceSlug, projectId, issueId)
+      .then((fresh) => {
+        if (!fresh) return;
+        rootIssueStore.issues.updateIssue(issueId, {
+          cost_order_calling: fresh.cost_order_calling,
+          budget_complete: fresh.budget_complete,
+        });
+      })
+      .catch((err) => console.error("Refresh after cost update failed", err));
+  };
   const { getUserDetails } = useMember();
 
   // 2. Definice Issue
@@ -254,7 +276,11 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
     editingCost,
   ]);
 
+  // Hodnota pole v okamžiku focusu - blur ukládá jen když ji uživatel opravdu změnil.
+  const costFocusValueRef = useRef<number | null>(null);
+
   const handleCostFocus = (key: TCostField) => {
+    costFocusValueRef.current = issue?.[key] ?? null;
     setEditingCost(key);
     setCostDisplay((prev) => ({ ...prev, [key]: issue?.[key]?.toString() ?? "" }));
   };
@@ -268,16 +294,19 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
     const rawValue = (costDisplay[key] ?? "").replace(/[^\d]/g, '');
     const numVal = rawValue === "" ? null : Number(rawValue);
 
-    if (issue && numVal !== issue[key]) {
+    // Porovnáváme s hodnotou při focusu, ne s aktuálním store: když backend mezitím
+    // hodnotu doplnil (1200 po "Závazně objednáno"), odchod z pole bez psaní ji nesmí smazat.
+    if (issue && numVal !== costFocusValueRef.current) {
       try {
         await issueOperations.update(workspaceSlug, projectId, issueId, { [key]: numVal } as Partial<TIssue>);
         setCostDisplay((prev) => ({ ...prev, [key]: formatMoney(numVal) }));
+        refreshServerComputedFields();
       } catch (err) {
         console.error(`${key} save failed`, err);
         setCostDisplay((prev) => ({ ...prev, [key]: formatMoney(issue[key]) }));
       }
     } else {
-      setCostDisplay((prev) => ({ ...prev, [key]: formatMoney(numVal) }));
+      setCostDisplay((prev) => ({ ...prev, [key]: formatMoney(issue?.[key]) }));
     }
   };
   // ----------------------------------------------------
@@ -446,9 +475,12 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
                   checked={!!issue?.firmly_ordered}
                   onChange={async (e) => {
                     try {
+                      const checked = e.target.checked;
                       await issueOperations.update(workspaceSlug, projectId, issueId, {
-                        firmly_ordered: e.target.checked,
+                        firmly_ordered: checked,
                       });
+                      // backend mohl doplnit Navolání zakázky + přepočítat součet
+                      if (checked) refreshServerComputedFields();
                     } catch (error) {
                       console.error(error);
                     }

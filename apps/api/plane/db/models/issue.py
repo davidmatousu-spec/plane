@@ -35,6 +35,10 @@ COST_FIELDS = (
     "cost_postproduction",
 )
 
+# Částka, která se automaticky doplní do "Navolání zakázky", když se issue
+# označí jako "Závazně objednáno" (a pole je prázdné).
+ORDER_CALLING_DEFAULT_AMOUNT = 1200
+
 # field -> text do aktivity (historie issue)
 COST_FIELD_LABELS = {
     "cost_order_calling": "updated navolání zakázky to",
@@ -316,6 +320,18 @@ class Issue(ProjectBaseModel):
         except Exception:
             old_cost_instance = None
 
+        # Závazně objednáno -> automaticky doplnit "Navolání zakázky".
+        # Jen při přepnutí na TRUE (nebo vytvoření rovnou jako TRUE) a jen když je
+        # pole prázdné - ručně zadanou nebo později smazanou hodnotu nepřepisujeme.
+        became_firmly_ordered = self.firmly_ordered and (
+            self._state.adding
+            or (old_cost_instance is not None and not old_cost_instance.firmly_ordered)
+        )
+        order_calling_auto_filled = False
+        if became_firmly_ordered and self.cost_order_calling is None:
+            self.cost_order_calling = ORDER_CALLING_DEFAULT_AMOUNT
+            order_calling_auto_filled = True
+
         cost_values = [getattr(self, field, None) for field in COST_FIELDS]
         has_breakdown = any(value is not None for value in cost_values)
         had_breakdown = old_cost_instance is not None and any(
@@ -332,9 +348,11 @@ class Issue(ProjectBaseModel):
         update_fields = kwargs.get("update_fields")
         if update_fields is not None:
             update_fields = set(update_fields)
+            if order_calling_auto_filled:
+                update_fields.add("cost_order_calling")
             if update_fields & set(COST_FIELDS):
                 update_fields.add("budget_complete")
-                kwargs["update_fields"] = update_fields
+            kwargs["update_fields"] = update_fields
 
         # --- SLEDOVÁNÍ ZMĚN NÁKLADOVÝCH POLÍ ---
         # Jeden SELECT pro všechna pole (dřív byl jeden dotaz na pole).
