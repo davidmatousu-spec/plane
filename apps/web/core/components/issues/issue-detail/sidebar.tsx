@@ -341,6 +341,7 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
   const ALLOWED_DEALER_PAID_USERS = [
     "david.matousu@gmail.com",
     "adam.bosak@onixia.cz",
+    "tereza.plechackova@onixia-pasport.cz",
   ];
   const showDealerPaid = ALLOWED_DEALER_PAID_USERS.some(
     (email) => email.toLowerCase() === currentUserEmail
