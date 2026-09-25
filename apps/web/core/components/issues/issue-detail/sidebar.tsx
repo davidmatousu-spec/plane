@@ -50,9 +50,7 @@ import type { TIssueOperations } from "./root";
 import { DealerDropdown } from "@/components/issues/dealer-dropdown";
 import { ScannerDropdown } from "@/components/issues/scanner-dropdown";
 import { ScannerIcon } from "@/components/issues/scanner-icon";
-import { IssueService } from "@/services/issue";
-
-const issueService = new IssueService();
+import { refreshServerComputedIssueFields } from "@/components/issues/server-computed-fields";
 
 // Vlastní ikonka bankovky/rozpočtu ve stylu Plane
 const BudgetPropertyIcon = (props: any) => (
@@ -166,21 +164,10 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
     rootIssueStore,
   } = useIssueDetail();
 
-  // Backend dopočítává "Náklady celkem" a při "Závazně objednáno" doplní "Navolání
-  // zakázky". PATCH vrací 204 bez dat, proto si po uložení issue načteme a do store
-  // propíšeme JEN tyhle dvě hodnoty - ne celé issue, aby refresh nepřepsal jinou
-  // úpravu, která mezitím proběhla. Chyba refreshe nevadí - data jsou uložená.
+  // Po uložení nákladu / "Závazně objednáno" načte hodnoty, které dopočítal backend
+  // (Náklady celkem, Navolání zakázky, Postprodukce) - viz server-computed-fields.ts.
   const refreshServerComputedFields = () => {
-    issueService
-      .retrieve(workspaceSlug, projectId, issueId)
-      .then((fresh) => {
-        if (!fresh) return;
-        rootIssueStore.issues.updateIssue(issueId, {
-          cost_order_calling: fresh.cost_order_calling,
-          budget_complete: fresh.budget_complete,
-        });
-      })
-      .catch((err) => console.error("Refresh after cost update failed", err));
+    void refreshServerComputedIssueFields(workspaceSlug, projectId, issueId, rootIssueStore.issues.updateIssue);
   };
 
   const { getUserDetails } = useMember();

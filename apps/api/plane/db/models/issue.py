@@ -21,6 +21,7 @@ from plane.db.mixins import SoftDeletionManager
 from plane.utils.exception_logger import log_exception
 from .project import ProjectBaseModel
 from plane.utils.uuid import convert_uuid_to_integer
+from plane.utils.time_estimate import parse_phase_hours, postproduction_cost_from_hours
 from .description import Description
 from plane.db.mixins import ChangeTrackerMixin
 from .state import StateGroup
@@ -338,6 +339,20 @@ class Issue(ProjectBaseModel):
             self.cost_order_calling = ORDER_CALLING_DEFAULT_AMOUNT
             order_calling_auto_filled = True
 
+        # Postprodukce = hodiny z řádku "postprodukce" tabulky "Časová náročnost" v popisu
+        # × POSTPRODUCTION_HOURLY_RATE. Přepočítá se jen když se ty hodiny změnily (nebo
+        # u nového issue) - úprava jiné části popisu ani ruční zadání částky do pole ji
+        # jinak nepřepíše. Smazání hodin částku nemaže.
+        postproduction_auto_filled = False
+        if self._state.adding or old_cost_instance is not None:
+            old_description = old_cost_instance.description_html if old_cost_instance is not None else None
+            if self.description_html != old_description:
+                new_hours = parse_phase_hours(self.description_html, "postprodukce")
+                old_hours = parse_phase_hours(old_description, "postprodukce")
+                if new_hours is not None and new_hours != old_hours:
+                    self.cost_postproduction = postproduction_cost_from_hours(new_hours)
+                    postproduction_auto_filled = True
+
         cost_values = [getattr(self, field, None) for field in COST_FIELDS]
         has_breakdown = any(value is not None for value in cost_values)
         had_breakdown = old_cost_instance is not None and any(
@@ -356,6 +371,8 @@ class Issue(ProjectBaseModel):
             update_fields = set(update_fields)
             if order_calling_auto_filled:
                 update_fields.add("cost_order_calling")
+            if postproduction_auto_filled:
+                update_fields.add("cost_postproduction")
             if update_fields & set(COST_FIELDS):
                 update_fields.add("budget_complete")
             kwargs["update_fields"] = update_fields
@@ -364,8 +381,18 @@ class Issue(ProjectBaseModel):
         # Jeden SELECT pro všechna pole (dřív byl jeden dotaz na pole).
         if old_cost_instance is not None:
             try:
+                from crum import get_current_user
                 from django.apps import apps
                 from django.utils import timezone
+
+                # Autor změny = kdo právě ukládá. self.updated_by nastaví BaseModel.save()
+                # až po tomhle bloku, takže by tu byl ještě PŘEDCHOZÍ editor.
+                current_user = get_current_user()
+                actor_id = (
+                    current_user.id
+                    if current_user is not None and not current_user.is_anonymous
+                    else self.updated_by_id
+                )
 
                 IssueActivity = apps.get_model("db", "IssueActivity")
                 for field, comment in ACTIVITY_FIELD_LABELS.items():
@@ -382,7 +409,7 @@ class Issue(ProjectBaseModel):
                         field=field,
                         old_value=old_value,
                         new_value=new_value,
-                        actor_id=self.updated_by_id,
+                        actor_id=actor_id,
                         epoch=timezone.now().timestamp()
                     )
             except Exception:

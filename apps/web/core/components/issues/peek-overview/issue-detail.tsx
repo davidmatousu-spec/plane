@@ -10,6 +10,10 @@ import { getTextContent } from "@plane/utils";
 // components
 import { DescriptionVersionsRoot } from "@/components/core/description-versions";
 import { DescriptionInput } from "@/components/editor/rich-text/description-input";
+import {
+  descriptionAffectsServerComputedFields,
+  refreshServerComputedIssueFields,
+} from "@/components/issues/server-computed-fields";
 // hooks
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useMember } from "@/hooks/store/use-member";
@@ -50,6 +54,7 @@ export const PeekOverviewIssueDetails = observer(function PeekOverviewIssueDetai
   const { data: currentUser } = useUser();
   const {
     issue: { getIssueById },
+    rootIssueStore,
   } = useIssueDetail();
   const { getProjectById } = useProject();
   const { getUserDetails } = useMember();
@@ -142,6 +147,14 @@ export const PeekOverviewIssueDetails = observer(function PeekOverviewIssueDetai
             description_html: value,
             ...(isMigrationUpdate ? { skip_activity: "true" } : {}),
           });
+          // backend mohl přepočítat Postprodukci z tabulky "Časová náročnost"
+          if (descriptionAffectsServerComputedFields(value))
+            void refreshServerComputedIssueFields(
+              workspaceSlug,
+              issue.project_id,
+              issue.id,
+              rootIssueStore.issues.updateIssue
+            );
         }}
         setIsSubmitting={(value) => setIsSubmitting(value)}
         projectId={issue.project_id}
