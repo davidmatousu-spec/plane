@@ -152,6 +152,8 @@ export class IssueStore implements IIssueStore {
       cost_transport: issue?.cost_transport,
       cost_postproduction: issue?.cost_postproduction,
       cost_order_calling: issue?.cost_order_calling,
+      cost_transport_data_capture: issue?.cost_transport_data_capture,
+      cost_administration: issue?.cost_administration,
       contact_person: issue?.contact_person,
       dealer: issue?.dealer,
       scanner: issue?.scanner,

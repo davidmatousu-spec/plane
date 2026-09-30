@@ -148,6 +148,8 @@ class SubIssuesEndpoint(BaseAPIView):
             "cost_transport",
             "cost_postproduction",
             "cost_order_calling",
+            "cost_transport_data_capture",
+            "cost_administration",
             "dealer",
             "scanner",
             "dealer_paid",

@@ -53,6 +53,9 @@ export type TBaseIssue = {
   cost_transport: number | null;
   cost_postproduction: number | null;
   cost_order_calling: number | null;
+  /** Doprava + ubytování (náběr dat); cost_transport = Doprava + ubytování (obchod) */
+  cost_transport_data_capture: number | null;
+  cost_administration: number | null;
   contact_person: string | null;
   dealer: string | null;
   /** Skenovač - křestní jména oddělená čárkou ("Adam, Jirka") */

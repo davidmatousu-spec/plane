@@ -32,8 +32,10 @@ COST_FIELDS = (
     "cost_order_calling",
     "cost_business",
     "cost_data_capture",
-    "cost_transport",
+    "cost_transport",  # Doprava + ubytování (obchod)
+    "cost_transport_data_capture",  # Doprava + ubytování (náběr dat)
     "cost_postproduction",
+    "cost_administration",
 )
 
 # Částka, která se automaticky doplní do "Navolání zakázky", když se issue
@@ -46,8 +48,10 @@ ACTIVITY_FIELD_LABELS = {
     "cost_order_calling": "updated navolání zakázky to",
     "cost_business": "updated obchodní činnost to",
     "cost_data_capture": "updated náběr dat to",
-    "cost_transport": "updated doprava + ubytování to",
+    "cost_transport": "updated doprava + ubytování (obchod) to",
+    "cost_transport_data_capture": "updated doprava + ubytování (náběr dat) to",
     "cost_postproduction": "updated postprodukce to",
+    "cost_administration": "updated administrativa to",
     "budget_complete": "updated budget complete to",
     "scanner": "updated the scanner to",
 }
@@ -78,6 +82,8 @@ def get_default_properties():
         "cost_transport": True,
         "cost_postproduction": True,
         "cost_order_calling": True,
+        "cost_transport_data_capture": True,
+        "cost_administration": True,
     }
 
 
@@ -100,6 +106,8 @@ def get_default_filters():
         "cost_transport": None,
         "cost_postproduction": None,
         "cost_order_calling": None,
+        "cost_transport_data_capture": None,
+        "cost_administration": None,
     }
 
 
@@ -140,6 +148,8 @@ def get_default_display_properties():
         "cost_transport": True,
         "cost_postproduction": True,
         "cost_order_calling": True,
+        "cost_transport_data_capture": True,
+        "cost_administration": True,
     }
 
 
@@ -222,6 +232,9 @@ class Issue(ProjectBaseModel):
     cost_transport = models.BigIntegerField(null=True, blank=True)
     cost_postproduction = models.BigIntegerField(null=True, blank=True)
     cost_order_calling = models.BigIntegerField(null=True, blank=True)
+    cost_transport_data_capture = models.BigIntegerField(null=True, blank=True)
+    # Administrativa - bude se doplňovat automaticky (částka a spouštěč zatím neznámé)
+    cost_administration = models.BigIntegerField(null=True, blank=True)
     sort_order = models.FloatField(default=65535)
     completed_at = models.DateTimeField(null=True)
     archived_at = models.DateField(null=True)
@@ -939,6 +952,9 @@ class IssueVersion(ProjectBaseModel):
     cost_transport = models.BigIntegerField(null=True, blank=True)
     cost_postproduction = models.BigIntegerField(null=True, blank=True)
     cost_order_calling = models.BigIntegerField(null=True, blank=True)
+    cost_transport_data_capture = models.BigIntegerField(null=True, blank=True)
+    # Administrativa - bude se doplňovat automaticky (částka a spouštěč zatím neznámé)
+    cost_administration = models.BigIntegerField(null=True, blank=True)
     last_saved_at = models.DateTimeField(default=timezone.now)
 
     issue = models.ForeignKey("db.Issue", on_delete=models.CASCADE, related_name="versions")
@@ -990,6 +1006,8 @@ class IssueVersion(ProjectBaseModel):
                 cost_transport=issue.cost_transport,
                 cost_postproduction=issue.cost_postproduction,
                 cost_order_calling=issue.cost_order_calling,
+                cost_transport_data_capture=issue.cost_transport_data_capture,
+                cost_administration=issue.cost_administration,
                 priority=issue.priority,
                 start_date=issue.start_date,
                 target_date=issue.target_date,

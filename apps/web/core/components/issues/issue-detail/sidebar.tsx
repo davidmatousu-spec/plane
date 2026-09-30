@@ -131,8 +131,10 @@ const COST_FIELDS = [
   { key: "cost_order_calling", label: "Navolání zakázky" },
   { key: "cost_business", label: "Obchodní činnost" },
   { key: "cost_data_capture", label: "Náběr dat" },
-  { key: "cost_transport", label: "Doprava + ubytování" },
+  { key: "cost_transport", label: "Doprava + ubytování (obchod)" },
+  { key: "cost_transport_data_capture", label: "Doprava + ubytování (náběr dat)" },
   { key: "cost_postproduction", label: "Postprodukce" },
+  { key: "cost_administration", label: "Administrativa" },
 ] as const;
 
 type TCostField = (typeof COST_FIELDS)[number]["key"];
@@ -300,6 +302,8 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
     issue?.cost_transport,
     issue?.cost_postproduction,
     issue?.cost_order_calling,
+    issue?.cost_transport_data_capture,
+    issue?.cost_administration,
     editingCost,
   ]);
 
