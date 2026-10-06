@@ -6,7 +6,7 @@ const issueService = new IssueService();
 /**
  * Pole, která dopočítává backend v Issue.save():
  *  - budget_complete ("Náklady celkem") = součet nákladových polí
- *  - cost_order_calling = 1200 při zaškrtnutí "Závazně objednáno"
+ *  - cost_order_calling = 1200 a cost_administration = 1300 při zaškrtnutí "Závazně objednáno"
  *  - cost_postproduction = hodiny z řádku "postprodukce" tabulky "Časová náročnost" v popisu × 669
  *
  * PATCH vrací 204 bez dat a store nerefetchuje, proto po uložení issue načteme a do store
@@ -25,6 +25,7 @@ export const refreshServerComputedIssueFields = async (
     updateIssue(issueId, {
       budget_complete: fresh.budget_complete,
       cost_order_calling: fresh.cost_order_calling,
+      cost_administration: fresh.cost_administration,
       cost_postproduction: fresh.cost_postproduction,
     });
   } catch (err) {

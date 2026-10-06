@@ -38,9 +38,14 @@ COST_FIELDS = (
     "cost_administration",
 )
 
-# Částka, která se automaticky doplní do "Navolání zakázky", když se issue
-# označí jako "Závazně objednáno" (a pole je prázdné).
-ORDER_CALLING_DEFAULT_AMOUNT = 1200
+# Částky, které se automaticky doplní, když se issue označí jako "Závazně objednáno"
+# (a pole je prázdné).
+ORDER_CALLING_DEFAULT_AMOUNT = 1200  # Navolání zakázky
+ADMINISTRATION_DEFAULT_AMOUNT = 1300  # Administrativa
+FIRMLY_ORDERED_DEFAULTS = {
+    "cost_order_calling": ORDER_CALLING_DEFAULT_AMOUNT,
+    "cost_administration": ADMINISTRATION_DEFAULT_AMOUNT,
+}
 
 # field -> text do aktivity (historie issue). Změny těchto polí zapisuje Issue.save(),
 # standardní Plane activity task je nezná.
@@ -340,23 +345,25 @@ class Issue(ProjectBaseModel):
         except Exception:
             old_cost_instance = None
 
-        # Závazně objednáno -> automaticky doplnit "Navolání zakázky".
-        # Jen při přepnutí na TRUE (nebo vytvoření rovnou jako TRUE) a jen když je
-        # pole prázdné - ručně zadanou nebo později smazanou hodnotu nepřepisujeme.
+        # Závazně objednáno -> automaticky doplnit "Navolání zakázky" a "Administrativa"
+        # (FIRMLY_ORDERED_DEFAULTS). Jen při přepnutí na TRUE (nebo vytvoření rovnou jako
+        # TRUE) a jen když je pole prázdné - ručně zadanou nebo později smazanou hodnotu
+        # nepřepisujeme.
         became_firmly_ordered = self.firmly_ordered and (
             self._state.adding
             or (old_cost_instance is not None and not old_cost_instance.firmly_ordered)
         )
-        order_calling_auto_filled = False
-        if became_firmly_ordered and self.cost_order_calling is None:
-            self.cost_order_calling = ORDER_CALLING_DEFAULT_AMOUNT
-            order_calling_auto_filled = True
+        auto_filled_fields = set()
+        if became_firmly_ordered:
+            for field, amount in FIRMLY_ORDERED_DEFAULTS.items():
+                if getattr(self, field) is None:
+                    setattr(self, field, amount)
+                    auto_filled_fields.add(field)
 
         # Postprodukce = hodiny z řádku "postprodukce" tabulky "Časová náročnost" v popisu
         # × POSTPRODUCTION_HOURLY_RATE. Přepočítá se jen když se ty hodiny změnily (nebo
         # u nového issue) - úprava jiné části popisu ani ruční zadání částky do pole ji
         # jinak nepřepíše. Smazání hodin částku nemaže.
-        postproduction_auto_filled = False
         if self._state.adding or old_cost_instance is not None:
             old_description = old_cost_instance.description_html if old_cost_instance is not None else None
             if self.description_html != old_description:
@@ -364,7 +371,7 @@ class Issue(ProjectBaseModel):
                 old_hours = parse_phase_hours(old_description, "postprodukce")
                 if new_hours is not None and new_hours != old_hours:
                     self.cost_postproduction = postproduction_cost_from_hours(new_hours)
-                    postproduction_auto_filled = True
+                    auto_filled_fields.add("cost_postproduction")
 
         cost_values = [getattr(self, field, None) for field in COST_FIELDS]
         has_breakdown = any(value is not None for value in cost_values)
@@ -381,11 +388,7 @@ class Issue(ProjectBaseModel):
         # součet přidat, jinak by se do DB neuložil.
         update_fields = kwargs.get("update_fields")
         if update_fields is not None:
-            update_fields = set(update_fields)
-            if order_calling_auto_filled:
-                update_fields.add("cost_order_calling")
-            if postproduction_auto_filled:
-                update_fields.add("cost_postproduction")
+            update_fields = set(update_fields) | auto_filled_fields
             if update_fields & set(COST_FIELDS):
                 update_fields.add("budget_complete")
             kwargs["update_fields"] = update_fields
