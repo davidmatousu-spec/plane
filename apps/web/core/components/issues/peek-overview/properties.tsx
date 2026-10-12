@@ -484,8 +484,9 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
                       await issueOperations.update(workspaceSlug, projectId, issueId, {
                         firmly_ordered: checked,
                       });
-                      // backend mohl doplnit Navolání zakázky + přepočítat součet
-                      if (checked) refreshServerComputedFields();
+                      // backend doplnil (zaškrtnutí) / smazal (odškrtnutí) datum závazné
+                      // objednávky, při zaškrtnutí i Navolání zakázky + Administrativu
+                      refreshServerComputedFields();
                     } catch (error) {
                       console.error(error);
                     }
@@ -501,6 +502,46 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
           </SidebarPropertyListItem>
         )}
 
+        {/* --- DATUM ZÁVAZNÉ OBJEDNÁVKY - doplní backend při zaškrtnutí, jde upravit ručně --- */}
+        <SidebarPropertyListItem icon={StartDatePropertyIcon} label="Datum závazné obj.">
+          <DateDropdown
+            value={issue.firmly_ordered_at}
+            onChange={(val) =>
+              issueOperations.update(workspaceSlug, projectId, issueId, {
+                firmly_ordered_at: val ? renderFormattedPayloadDate(val) : null,
+              })
+            }
+            placeholder="-"
+            buttonVariant="transparent-with-text"
+            disabled={disabled}
+            className="w-full grow group"
+            buttonContainerClassName="w-full text-left h-7.5"
+            buttonClassName={`text-body-xs-medium ${issue?.firmly_ordered_at ? "" : "text-placeholder"}`}
+            hideIcon
+            clearIconClassName="h-3 w-3 hidden group-hover:inline"
+          />
+        </SidebarPropertyListItem>
+
+        {/* --- DATUM FAKTURACE (DUZP) - ručně, nebo backend při přesunu do "Odevzdáno, čekáme na zaplacení" --- */}
+        <SidebarPropertyListItem icon={DueDatePropertyIcon} label="Datum fakturace (DUZP)">
+          <DateDropdown
+            value={issue.invoice_date}
+            onChange={(val) =>
+              issueOperations.update(workspaceSlug, projectId, issueId, {
+                invoice_date: val ? renderFormattedPayloadDate(val) : null,
+              })
+            }
+            placeholder="-"
+            buttonVariant="transparent-with-text"
+            disabled={disabled}
+            className="w-full grow group"
+            buttonContainerClassName="w-full text-left h-7.5"
+            buttonClassName={`text-body-xs-medium ${issue?.invoice_date ? "" : "text-placeholder"}`}
+            hideIcon
+            clearIconClassName="h-3 w-3 hidden group-hover:inline"
+          />
+        </SidebarPropertyListItem>
+
         {/* --- SKENOVAČ (DROPDOWN) - viditelný pro všechny, stejně jako obchodník --- */}
         <SidebarPropertyListItem icon={ScannerIcon} label="Skenovač">
           <ScannerDropdown value={issue?.scanner ?? ""} onChange={handleScannerChange} disabled={disabled} />
@@ -509,7 +550,11 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
         <SidebarPropertyListItem icon={StatePropertyIcon} label={t("common.state")}>
           <StateDropdown
             value={issue?.state_id}
-            onChange={(val) => issueOperations.update(workspaceSlug, projectId, issueId, { state_id: val })}
+            onChange={async (val) => {
+              await issueOperations.update(workspaceSlug, projectId, issueId, { state_id: val });
+              // backend mohl doplnit Datum fakturace (DUZP) při přesunu do "Odevzdáno, čekáme na zaplacení"
+              refreshServerComputedFields();
+            }}
             projectId={projectId}
             disabled={disabled}
             buttonVariant="transparent-with-text"

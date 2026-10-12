@@ -22,6 +22,7 @@ from plane.utils.exception_logger import log_exception
 from .project import ProjectBaseModel
 from plane.utils.uuid import convert_uuid_to_integer
 from plane.utils.time_estimate import parse_phase_hours, postproduction_cost_from_hours
+from plane.utils.issue_dates import is_invoice_state_name, local_today
 from .description import Description
 from plane.db.mixins import ChangeTrackerMixin
 from .state import StateGroup
@@ -57,6 +58,8 @@ ACTIVITY_FIELD_LABELS = {
     "cost_transport_data_capture": "updated doprava + ubytování (náběr dat) to",
     "cost_postproduction": "updated postprodukce to",
     "cost_administration": "updated administrativa to",
+    "firmly_ordered_at": "updated datum závazné objednávky to",
+    "invoice_date": "updated datum fakturace (DUZP) to",
     "budget_complete": "updated budget complete to",
     "scanner": "updated the scanner to",
 }
@@ -81,6 +84,8 @@ def get_default_properties():
         "contact_person": True,
         "dealer": True,
         "scanner": True,
+        "firmly_ordered_at": True,
+        "invoice_date": True,
         "budget_complete": True,
         "cost_business": True,
         "cost_data_capture": True,
@@ -147,6 +152,8 @@ def get_default_display_properties():
         "contact_person": True,
         "dealer": True,
         "scanner": True,
+        "firmly_ordered_at": True,
+        "invoice_date": True,
         "budget_complete": True,
         "cost_business": True,
         "cost_data_capture": True,
@@ -219,6 +226,10 @@ class Issue(ProjectBaseModel):
     scanner = models.CharField(max_length=255, null=True, blank=True)
     dealer_paid = models.BooleanField(default=False)
     firmly_ordered = models.BooleanField(default=False)
+    # Datum závazné objednávky - doplní se při zaškrtnutí "Závazně objednáno", smaže při odškrtnutí
+    firmly_ordered_at = models.DateField(null=True, blank=True)
+    # Datum fakturace (DUZP) - ručně, nebo automaticky při přesunu do INVOICE_STATE_NAME
+    invoice_date = models.DateField(null=True, blank=True)
     assignees = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         blank=True,
@@ -359,6 +370,34 @@ class Issue(ProjectBaseModel):
                 if getattr(self, field) is None:
                     setattr(self, field, amount)
                     auto_filled_fields.add(field)
+
+        # Datum závazné objednávky: zaškrtnutí -> dnešní datum (když je prázdné, jinak ruční
+        # hodnotu necháme), odškrtnutí -> smazat. Ručně se dá upravit kdykoliv.
+        became_not_firmly_ordered = (
+            not self.firmly_ordered and old_cost_instance is not None and old_cost_instance.firmly_ordered
+        )
+        if became_firmly_ordered and self.firmly_ordered_at is None:
+            self.firmly_ordered_at = local_today()
+            auto_filled_fields.add("firmly_ordered_at")
+        elif became_not_firmly_ordered and self.firmly_ordered_at is not None:
+            self.firmly_ordered_at = None
+            auto_filled_fields.add("firmly_ordered_at")
+
+        # Datum fakturace (DUZP): přesun do sloupce "Odevzdáno, čekáme na zaplacení" (nebo
+        # vytvoření rovnou v něm) -> dnešní datum, jen když je pole prázdné. Odchod ze
+        # sloupce datum nemaže.
+        entered_new_state = self.state_id is not None and (
+            self._state.adding
+            or (old_cost_instance is not None and old_cost_instance.state_id != self.state_id)
+        )
+        if entered_new_state and self.invoice_date is None:
+            try:
+                in_invoice_state = is_invoice_state_name(self.state.name)
+            except Exception:
+                in_invoice_state = False
+            if in_invoice_state:
+                self.invoice_date = local_today()
+                auto_filled_fields.add("invoice_date")
 
         # Postprodukce = hodiny z řádku "postprodukce" tabulky "Časová náročnost" v popisu
         # × POSTPRODUCTION_HOURLY_RATE. Přepočítá se jen když se ty hodiny změnily (nebo
@@ -934,6 +973,10 @@ class IssueVersion(ProjectBaseModel):
     scanner = models.CharField(max_length=255, null=True, blank=True)
     dealer_paid = models.BooleanField(default=False)
     firmly_ordered = models.BooleanField(default=False)
+    # Datum závazné objednávky - doplní se při zaškrtnutí "Závazně objednáno", smaže při odškrtnutí
+    firmly_ordered_at = models.DateField(null=True, blank=True)
+    # Datum fakturace (DUZP) - ručně, nebo automaticky při přesunu do INVOICE_STATE_NAME
+    invoice_date = models.DateField(null=True, blank=True)
     assignees = ArrayField(models.UUIDField(), blank=True, default=list)
     sequence_id = models.IntegerField(default=1, verbose_name="Issue Sequence ID")
     labels = ArrayField(models.UUIDField(), blank=True, default=list)
@@ -1011,6 +1054,8 @@ class IssueVersion(ProjectBaseModel):
                 cost_order_calling=issue.cost_order_calling,
                 cost_transport_data_capture=issue.cost_transport_data_capture,
                 cost_administration=issue.cost_administration,
+                firmly_ordered_at=issue.firmly_ordered_at,
+                invoice_date=issue.invoice_date,
                 priority=issue.priority,
                 start_date=issue.start_date,
                 target_date=issue.target_date,

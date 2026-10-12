@@ -76,6 +76,8 @@ class IssueSerializer(BaseSerializer):
     scanner = serializers.CharField(required=False, allow_null=True, allow_blank=True, max_length=255)
     dealer_paid = serializers.BooleanField(required=False, default=False)
     firmly_ordered = serializers.BooleanField(required=False, default=False)
+    firmly_ordered_at = serializers.DateField(required=False, allow_null=True)
+    invoice_date = serializers.DateField(required=False, allow_null=True)
 
     class Meta:
         model = Issue
@@ -659,6 +661,8 @@ class IssueExpandSerializer(BaseSerializer):
     scanner = serializers.CharField(required=False, allow_null=True, allow_blank=True, max_length=255)
     dealer_paid = serializers.BooleanField(required=False, default=False)
     firmly_ordered = serializers.BooleanField(required=False, default=False)
+    firmly_ordered_at = serializers.DateField(required=False, allow_null=True)
+    invoice_date = serializers.DateField(required=False, allow_null=True)
     labels = serializers.SerializerMethodField()
     assignees = serializers.SerializerMethodField()
     state = StateLiteSerializer(read_only=True)

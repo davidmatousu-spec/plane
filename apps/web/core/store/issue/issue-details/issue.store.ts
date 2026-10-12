@@ -159,6 +159,8 @@ export class IssueStore implements IIssueStore {
       scanner: issue?.scanner,
       dealer_paid: issue?.dealer_paid,
       firmly_ordered: issue?.firmly_ordered,
+      firmly_ordered_at: issue?.firmly_ordered_at,
+      invoice_date: issue?.invoice_date,
       sub_issues_count: issue?.sub_issues_count,
       attachment_count: issue?.attachment_count,
       link_count: issue?.link_count,

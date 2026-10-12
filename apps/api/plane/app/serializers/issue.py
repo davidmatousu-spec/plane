@@ -76,6 +76,8 @@ class IssueFlatSerializer(BaseSerializer):
             "scanner",
             "dealer_paid",
             "firmly_ordered",
+            "firmly_ordered_at",
+            "invoice_date",
         ]
 
 
@@ -830,6 +832,8 @@ class IssueSerializer(DynamicBaseSerializer):
             "scanner",
             "dealer_paid",
             "firmly_ordered",
+            "firmly_ordered_at",
+            "invoice_date",
         ]
         read_only_fields = fields
 
@@ -902,6 +906,8 @@ class IssueListDetailSerializer(serializers.Serializer):
             "scanner": instance.scanner,
             "dealer_paid": instance.dealer_paid,
             "firmly_ordered": instance.firmly_ordered,
+            "firmly_ordered_at": instance.firmly_ordered_at,
+            "invoice_date": instance.invoice_date,
             
         }
 

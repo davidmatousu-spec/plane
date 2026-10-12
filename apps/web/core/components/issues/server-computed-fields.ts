@@ -8,6 +8,8 @@ const issueService = new IssueService();
  *  - budget_complete ("Náklady celkem") = součet nákladových polí
  *  - cost_order_calling = 1200 a cost_administration = 1300 při zaškrtnutí "Závazně objednáno"
  *  - cost_postproduction = hodiny z řádku "postprodukce" tabulky "Časová náročnost" v popisu × 669
+ *  - firmly_ordered_at = dnešní datum při zaškrtnutí "Závazně objednáno", smaže se při odškrtnutí
+ *  - invoice_date (DUZP) = dnešní datum při přesunu do sloupce "Odevzdáno, čekáme na zaplacení"
  *
  * PATCH vrací 204 bez dat a store nerefetchuje, proto po uložení issue načteme a do store
  * propíšeme JEN tyhle hodnoty - ne celé issue, aby refresh nepřepsal jinou úpravu, která
@@ -27,6 +29,8 @@ export const refreshServerComputedIssueFields = async (
       cost_order_calling: fresh.cost_order_calling,
       cost_administration: fresh.cost_administration,
       cost_postproduction: fresh.cost_postproduction,
+      firmly_ordered_at: fresh.firmly_ordered_at,
+      invoice_date: fresh.invoice_date,
     });
   } catch (err) {
     console.error("Refresh of server-computed issue fields failed", err);

@@ -1,7 +1,12 @@
+from datetime import date
+
 import pytest
 
 from plane.db.models import Issue, Project, State, Workspace
 from plane.db.models.issue import ADMINISTRATION_DEFAULT_AMOUNT, ORDER_CALLING_DEFAULT_AMOUNT
+from plane.utils.issue_dates import INVOICE_STATE_NAME
+
+TODAY = date(2026, 10, 12)
 
 P = '<p class="editor-paragraph-block">'
 
@@ -31,6 +36,17 @@ def project(workspace, create_user):
 @pytest.fixture
 def state(project):
     return State.objects.create(name="Todo", project=project, group="backlog", default=True)
+
+
+@pytest.fixture
+def invoice_state(project):
+    return State.objects.create(name=INVOICE_STATE_NAME, project=project, group="started")
+
+
+@pytest.fixture
+def fixed_today(monkeypatch):
+    monkeypatch.setattr("plane.db.models.issue.local_today", lambda: TODAY)
+    return TODAY
 
 
 @pytest.fixture
@@ -154,3 +170,102 @@ class TestPostproductionFromDescription:
         issue.refresh_from_db()
 
         assert issue.cost_postproduction == 1673
+
+
+@pytest.mark.unit
+class TestFirmlyOrderedDate:
+    """Datum závazné objednávky: zaškrtnutí -> dnes, odškrtnutí -> smazat"""
+
+    @pytest.mark.django_db
+    def test_checking_sets_today(self, make_issue, fixed_today):
+        issue = make_issue()
+        assert issue.firmly_ordered_at is None
+
+        issue.firmly_ordered = True
+        issue.save()
+        issue.refresh_from_db()
+
+        assert issue.firmly_ordered_at == fixed_today
+
+    @pytest.mark.django_db
+    def test_manual_date_is_kept_when_checking(self, make_issue, fixed_today):
+        issue = make_issue(firmly_ordered_at=date(2026, 9, 1))
+
+        issue.firmly_ordered = True
+        issue.save()
+        issue.refresh_from_db()
+
+        assert issue.firmly_ordered_at == date(2026, 9, 1)
+
+    @pytest.mark.django_db
+    def test_unchecking_clears_date_and_rechecking_sets_new(self, make_issue, fixed_today):
+        issue = make_issue(firmly_ordered=True, firmly_ordered_at=date(2026, 9, 1))
+
+        issue.firmly_ordered = False
+        issue.save()
+        issue.refresh_from_db()
+        assert issue.firmly_ordered_at is None
+
+        issue.firmly_ordered = True
+        issue.save()
+        issue.refresh_from_db()
+        assert issue.firmly_ordered_at == fixed_today
+
+    @pytest.mark.django_db
+    def test_manual_edit_while_checked_is_kept(self, make_issue, fixed_today):
+        issue = make_issue(firmly_ordered=True)
+
+        issue.firmly_ordered_at = date(2026, 8, 15)
+        issue.save()
+        issue.refresh_from_db()
+
+        assert issue.firmly_ordered_at == date(2026, 8, 15)
+
+
+@pytest.mark.unit
+class TestInvoiceDate:
+    """Datum fakturace (DUZP): přesun do "Odevzdáno, čekáme na zaplacení" -> dnes"""
+
+    @pytest.mark.django_db
+    def test_moving_to_invoice_state_sets_today(self, make_issue, invoice_state, fixed_today):
+        issue = make_issue()
+        assert issue.invoice_date is None
+
+        issue.state = invoice_state
+        issue.save()
+        issue.refresh_from_db()
+
+        assert issue.invoice_date == fixed_today
+
+    @pytest.mark.django_db
+    def test_manual_date_is_kept(self, make_issue, invoice_state, fixed_today):
+        issue = make_issue(invoice_date=date(2026, 9, 30))
+
+        issue.state = invoice_state
+        issue.save()
+        issue.refresh_from_db()
+
+        assert issue.invoice_date == date(2026, 9, 30)
+
+    @pytest.mark.django_db
+    def test_leaving_invoice_state_keeps_date(self, make_issue, state, invoice_state, fixed_today):
+        issue = make_issue()
+        issue.state = invoice_state
+        issue.save()
+
+        issue.state = state
+        issue.save()
+        issue.refresh_from_db()
+
+        assert issue.invoice_date == fixed_today
+
+    @pytest.mark.django_db
+    def test_other_state_changes_do_not_set_date(self, make_issue, project, fixed_today):
+        other_state = State.objects.create(name="Zkreslení dokumentace", project=project, group="started")
+        issue = make_issue()
+
+        issue.state = other_state
+        issue.save()
+        issue.refresh_from_db()
+
+        assert issue.invoice_date is None

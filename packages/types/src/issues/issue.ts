@@ -62,6 +62,10 @@ export type TBaseIssue = {
   scanner: string | null;
   dealer_paid: boolean;
   firmly_ordered: boolean;
+  /** Datum závazné objednávky (YYYY-MM-DD) - backend doplní/smaže podle firmly_ordered */
+  firmly_ordered_at: string | null;
+  /** Datum fakturace (DUZP) (YYYY-MM-DD) - ručně, nebo backend při přesunu do "Odevzdáno, čekáme na zaplacení" */
+  invoice_date: string | null;
   assignee_ids: string[];
   estimate_point: string | null;
 
