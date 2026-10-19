@@ -10,6 +10,8 @@ RESTRICTED_STATE_USERS = {
         "f8a976f5-2152-43f5-b36a-cc61bc9d71c6",  # Schůzka (domluvený termín)
         "a1cb9cc0-825d-43b9-a10f-6d00e3d99156",  # Vytvořit zakázku
         "dad2e6f5-b80b-4c3b-8b33-5f43bc5fa6cc",  # LEAD
+        "d9eb1998-12b9-4c57-98f0-9053c0a8823d",  # ON HOLD
+        "fe0d3c44-ba2e-48fa-8180-7cd4261121a8",  # Po volbách
     ],
 }
 
